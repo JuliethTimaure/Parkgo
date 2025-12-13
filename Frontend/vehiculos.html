@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Vehículos - Park Go</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/vehicles.css">
+</head>
+<body class="dashboard-body">
+
+    <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo"><img src="Logo.png" alt="Park Go"></div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="sidebar-item"><i class="fa-solid fa-magnifying-glass"></i> Buscar Parking</a></li>
+            <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
+            <li><a href="vehiculos.html" class="sidebar-item active"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
+            <li><a href="mis-estacionamientos.html" class="sidebar-item"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <h1>Mis Vehículos</h1>
+            <div class="user-badge">
+                <div class="user-avatar-sm" id="headerAvatar"><span id="headerInitial">U</span><img id="headerImg" src="" style="display:none"></div>
+                <span id="headerName">...</span>
+            </div>
+        </header>
+
+        <div class="dash-card">
+            <div class="dashboard-header">
+                <h3>Gestionar flota</h3>
+                <button class="btn-primary btn-sm" id="btnOpenVehicleModal"><i class="fa-solid fa-plus"></i> Agregar</button>
+            </div>
+            <div id="vehiclesContainer" class="vehicles-grid"></div>
+            <div id="vehiclesEmptyState" style="text-align: center; color: #94a3b8; padding: 40px; display: none;">
+                <i class="fa-solid fa-car-side" style="font-size: 3rem; margin-bottom: 15px; color: #cbd5e1;"></i>
+                <p>No tienes vehículos registrados.</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="vehicleModal">
+        <div class="modal-card">
+            <div class="modal-header-v"><h3>Registrar Vehículo</h3><button class="close-modal-v" id="closeVehicleModal">&times;</button></div>
+            <form id="vehicleForm">
+                <div class="form-grid">
+                    <div class="input-group full-width">
+                        <label>Patente</label>
+                        <input type="text" id="vehPatente" placeholder="ABCD12" maxlength="6" style="text-transform: uppercase;" required>
+                        <small style="font-size: 0.75rem; color: #64748B;">Sin guiones ni puntos.</small>
+                    </div>
+                    <div class="input-group"><label>Marca</label><select id="vehMarca" required><option value="">Cargando...</option></select></div>
+                    <div class="input-group"><label>Modelo</label><select id="vehModelo" required disabled><option value="">Selecciona marca</option></select></div>
+                    <div class="input-group">
+                        <label>Tipo</label>
+                        <select id="vehTipo" required>
+                            <option value="Sedan">Sedan</option><option value="Hatchback">Hatchback</option>
+                            <option value="SUV">SUV</option><option value="Camioneta">Camioneta</option><option value="Moto">Moto</option>
+                        </select>
+                    </div>
+                    <div class="input-group"><label>Color</label><input type="text" id="vehColor" required></div>
+                </div>
+                <div class="modal-footer-v">
+                    <button type="button" class="btn-secondary" id="cancelVehicleBtn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/common-dashboard.js"></script>
+    <script src="js/vehicles-logic.js"></script>
+</body>
+</html>

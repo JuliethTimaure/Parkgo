@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar Estacionamiento - Park Go</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-body">
+
+    <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo"><img src="Logo.png" alt="Park Go"></div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="sidebar-item active"><i class="fa-solid fa-magnifying-glass"></i> Buscar Parking</a></li>
+            <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
+            <li><a href="vehiculos.html" class="sidebar-item"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
+            <li><a href="mis-estacionamientos.html" class="sidebar-item"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <div>
+                <h1>Encuentra tu lugar</h1>
+                <p style="color: #64748B; font-size: 0.9rem;">Explora estacionamientos disponibles en tu comuna.</p>
+            </div>
+            <div class="user-badge">
+                <div class="user-avatar-sm" id="headerAvatar"><span id="headerInitial">U</span><img id="headerImg" src="" style="display:none"></div>
+                <span id="headerName">Cargando...</span>
+            </div>
+        </header>
+
+        <div class="filters-bar" style="justify-content: space-between;">
+            <div style="display: flex; gap: 10px; flex: 1;">
+                <input type="text" id="searchLocation" class="search-input-lg" placeholder="📍 ¿En qué comuna buscas? (Ej: Concepción)">
+                <select class="filter-select" id="filterPrice">
+                    <option value="">Ordenar por Precio</option>
+                    <option value="asc">Menor precio</option>
+                    <option value="desc">Mayor precio</option>
+                </select>
+                <button class="btn-primary" id="btnFilter">Filtrar</button>
+            </div>
+            <a href="mis-estacionamientos.html" class="btn-primary" style="background-color: #003B73; text-decoration: none; margin-left: 10px;">
+                <i class="fa-solid fa-plus"></i> Publicar Espacio
+            </a>
+        </div>
+
+        <div id="parkingsGrid" class="parkings-grid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748B;">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando estacionamientos...
+            </div>
+        </div>
+    </main>
+
+    <script src="js/common-dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('parkingsGrid');
+            const searchInput = document.getElementById('searchLocation');
+            const filterPrice = document.getElementById('filterPrice');
+            let allParkings = [];
+
+            try {
+                // Fetch público para obtener estacionamientos
+                const res = await fetch('http://localhost:3000/api/parkings');
+                allParkings = await res.json();
+                renderParkings(allParkings);
+            } catch (err) {
+                grid.innerHTML = '<p style="text-align:center; width:100%">Error cargando datos del servidor.</p>';
+            }
+
+            function renderParkings(data) {
+                grid.innerHTML = '';
+                if(data.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <p>No se encontraron estacionamientos con esos filtros.</p>
+                        </div>`;
+                    return;
+                }
+                data.forEach(p => {
+                    const img = p.ruta_imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen';
+                    const precioFmt = parseInt(p.precio).toLocaleString('es-CL');
+                    
+                    const card = `
+                        <div class="parking-card">
+                            <div class="parking-img-wrapper">
+                                <img src="${img}" class="parking-img" alt="${p.titulo}">
+                                <div class="parking-price-tag">$${precioFmt} / mes</div>
+                            </div>
+                            <div class="parking-content">
+                                <div class="parking-title">${p.titulo}</div>
+                                <div class="parking-location">
+                                    <i class="fa-solid fa-location-dot"></i> ${p.calle}, ${p.nombre_comuna}
+                                </div>
+                                <div class="parking-features">
+                                    <span class="feature-pill"><i class="fa-solid fa-shield-halved"></i> ${p.seguridad || 'Estándar'}</span>
+                                    <span class="feature-pill"><i class="fa-solid fa-warehouse"></i> ${p.tipo_cobertura || 'N/A'}</span>
+                                </div>
+                                <button class="btn-view-parking" onclick="window.location.href='detalle.html?id=${p.id_publicacion}'">Ver Detalles</button>
+                            </div>
+                        </div>`;
+                    grid.innerHTML += card;
+                });
+            }
+
+            // Lógica de Filtro Front-End
+            document.getElementById('btnFilter').addEventListener('click', () => {
+                const term = searchInput.value.toLowerCase();
+                let filtered = allParkings.filter(p => 
+                    p.nombre_comuna.toLowerCase().includes(term) || 
+                    p.calle.toLowerCase().includes(term) ||
+                    p.titulo.toLowerCase().includes(term)
+                );
+                
+                if(filterPrice.value === 'asc') filtered.sort((a,b) => a.precio - b.precio);
+                if(filterPrice.value === 'desc') filtered.sort((a,b) => b.precio - a.precio);
+                
+                renderParkings(filtered);
+            });
+        });
+    </script>
+</body>
+</html>

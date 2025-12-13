@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Estacionamientos - Park Go</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/wizard.css"> 
+</head>
+<body class="dashboard-body">
+
+    <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo"><img src="Logo.png" alt="Park Go"></div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="sidebar-item"><i class="fa-solid fa-magnifying-glass"></i> Buscar Parking</a></li>
+            <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
+            <li><a href="vehiculos.html" class="sidebar-item"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
+            <li><a href="mis-estacionamientos.html" class="sidebar-item active"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <div>
+                <h1>Mis Estacionamientos</h1>
+                <p style="color: #64748B; font-size: 0.95rem;">Gestiona tus espacios y aumenta tus ingresos.</p>
+            </div>
+            <div class="user-badge">
+                <div class="user-avatar-sm" id="headerAvatar"><span id="headerInitial">U</span><img id="headerImg" src="" style="display:none"></div>
+                <span id="headerName">...</span>
+            </div>
+        </header>
+
+        <div class="dash-card">
+            
+            <div id="viewParkingList">
+                <div class="dashboard-header" style="border-bottom: 1px solid #F1F5F9; padding-bottom: 20px; margin-bottom: 30px;">
+                    <h3>Mis Espacios Publicados</h3>
+                    <button class="btn-primary" id="btnStartWizard"><i class="fa-solid fa-plus"></i> Publicar Nuevo</button>
+                </div>
+                <div id="parkingsContainer" class="parkings-grid"></div>
+                <div id="parkingsEmptyState" style="text-align: center; color: #94a3b8; padding: 60px; display: none;">
+                    <i class="fa-solid fa-warehouse" style="font-size: 4rem; margin-bottom: 20px; color: #E2E8F0;"></i>
+                    <p style="font-size: 1.1rem; font-weight: 500;">Aún no tienes estacionamientos.</p>
+                    <p>¡Publica el primero y comienza a ganar dinero!</p>
+                </div>
+            </div>
+
+            <div id="viewWizard" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h3 style="color: #003B73; margin:0;">Nueva Publicación</h3>
+                    <button class="btn-cancel" id="btnCancelWizard"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                </div>
+
+                <div class="stepper-wrapper">
+                    <div class="stepper-item active" id="stepIndicator1">
+                        <div class="step-counter">1</div>
+                        <div class="step-name">Detalles</div>
+                    </div>
+                    <div class="stepper-item" id="stepIndicator2">
+                        <div class="step-counter">2</div>
+                        <div class="step-name">Galería</div>
+                    </div>
+                    <div class="stepper-item" id="stepIndicator3">
+                        <div class="step-counter">3</div>
+                        <div class="step-name">Ubicación</div>
+                    </div>
+                </div>
+
+                <form id="wizardForm">
+                    
+                    <div class="step-content active" id="step1">
+                        
+                        <div class="form-section">
+                            <h4 class="section-title"><i class="fa-solid fa-pen-to-square"></i> Información Básica</h4>
+                            <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                                <div class="input-group">
+                                    <label class="modern-label">Título del Anuncio*</label>
+                                    <input type="text" id="pTitulo" class="modern-input" placeholder="Ej: Estacionamiento seguro Centro Concepción" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="modern-label">Precio Mensual*</label>
+                                    <div class="input-icon-wrapper">
+                                        <span class="input-icon-symbol">$</span>
+                                        <input type="text" id="pPrecio" class="modern-input input-with-icon" placeholder="45.000" maxlength="12" required>
+                                    </div>
+                                </div>
+                                <div class="input-group full-width">
+                                    <label class="modern-label">Descripción*</label>
+                                    <textarea id="pDesc" class="modern-input" rows="3" placeholder="Describe ventajas, accesos, cercanía a lugares de interés..." required></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4 class="section-title"><i class="fa-solid fa-layer-group"></i> Características del Espacio</h4>
+                            
+                            <label class="modern-label">Tipo de Cobertura</label>
+                            <div class="selection-grid">
+                                <label class="selection-card">
+                                    <input type="radio" name="cobertura" value="Aire Libre" checked>
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-sun"></i>
+                                        <span>Aire Libre</span>
+                                    </div>
+                                </label>
+                                <label class="selection-card">
+                                    <input type="radio" name="cobertura" value="Techado">
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-warehouse"></i>
+                                        <span>Techado</span>
+                                    </div>
+                                </label>
+                                <label class="selection-card">
+                                    <input type="radio" name="cobertura" value="Subterraneo">
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-arrow-down"></i>
+                                        <span>Subterráneo</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <label class="modern-label" style="margin-top: 20px;">Nivel de Seguridad</label>
+                            <div class="selection-grid four-cols">
+                                <label class="selection-card">
+                                    <input type="radio" name="seguridad" value="Ninguna" checked>
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-lock-open"></i>
+                                        <span>Básica</span>
+                                    </div>
+                                </label>
+                                <label class="selection-card">
+                                    <input type="radio" name="seguridad" value="Porton Electrico">
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-door-closed"></i>
+                                        <span>Portón</span>
+                                    </div>
+                                </label>
+                                <label class="selection-card">
+                                    <input type="radio" name="seguridad" value="Camaras">
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-video"></i>
+                                        <span>Cámaras</span>
+                                    </div>
+                                </label>
+                                <label class="selection-card">
+                                    <input type="radio" name="seguridad" value="Conserje">
+                                    <div class="card-content">
+                                        <i class="fa-solid fa-user-shield"></i>
+                                        <span>Conserje</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-grid three-cols">
+                                <div class="input-group">
+                                    <label class="modern-label">Largo (m)</label>
+                                    <input type="number" id="pLargo" class="modern-input" step="0.1" placeholder="Ej: 5.0">
+                                </div>
+                                <div class="input-group">
+                                    <label class="modern-label">Ancho (m)</label>
+                                    <input type="number" id="pAncho" class="modern-input" step="0.1" placeholder="Ej: 2.5">
+                                </div>
+                                <div class="input-group">
+                                    <label class="modern-label">Horario</label>
+                                    <select id="pHorario" class="modern-input">
+                                        <option value="true">24/7 (Acceso libre)</option>
+                                        <option value="false">Horario Restringido</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-top: 10px;">
+                                <label class="modern-label">Altura Máxima (Solo si es techado)</label>
+                                <input type="number" id="pAltura" class="modern-input" step="0.1" placeholder="No aplica (Aire libre)" disabled>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-content" id="step2">
+                       <div class="upload-container-modern">
+                           <div class="upload-icon-circle"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                           <h3 style="color:#1E293B;">Sube tus mejores fotos</h3>
+                           <p style="color:#64748B; font-size: 0.9rem;">La primera foto será la portada de tu anuncio.</p>
+                           
+                           <button type="button" class="btn-upload-trigger" onclick="document.getElementById('pInputFotos').click()">
+                               Elegir Imágenes
+                           </button>
+                           <input type="file" id="pInputFotos" multiple accept="image/*" style="display: none;">
+                       </div>
+                       
+                       <div class="photos-sortable-grid" id="photoSortableGrid"></div>
+                       <p id="noPhotosFeedback" style="color: #EF4444; font-size: 0.9rem; margin-top: 15px; display: none; text-align:center; font-weight:600;">
+                           <i class="fa-solid fa-triangle-exclamation"></i> Debes subir al menos una foto para continuar.
+                       </p>
+                   </div>
+
+                    <div class="step-content" id="step3">
+                        <div class="form-grid two-cols">
+                            <div class="input-group"><label class="modern-label">Región*</label><select id="pRegion" class="modern-input" required><option value="">Cargando...</option></select></div>
+                            <div class="input-group"><label class="modern-label">Comuna*</label><select id="pComuna" class="modern-input" required disabled><option>Selecciona Región</option></select></div>
+                            
+                            <div class="input-group full-width">
+                                <label class="modern-label">Buscar Dirección Exacta*</label>
+                                <div class="autocomplete-wrapper">
+                                    <input type="text" id="pDireccionTexto" class="modern-input" placeholder="Ej: Calle Los Carrera 555, Concepción" required autocomplete="off">
+                                    <i class="fa-solid fa-circle-notch fa-spin search-loading" id="searchSpinner"></i>
+                                    <div id="addressSuggestions" class="autocomplete-items"></div>
+                                </div>
+                                <p style="color: #64748B; font-size: 0.8rem; margin-top: 5px;">
+                                    Escribe y selecciona una opción de la lista para ubicar el mapa.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="leafletMap" class="map-container shadow-map"></div>
+                        <p style="font-size: 0.85rem; color: #64748B; margin-top: 10px; text-align: center; background: #F8FAFC; padding: 10px; border-radius: 8px;">
+                            <i class="fa-solid fa-hand-pointer"></i> <b>Tip:</b> Si la ubicación no es exacta, arrastra el marcador azul en el mapa.
+                        </p>
+                    </div>
+
+                    <div class="wizard-footer">
+                        <button type="button" class="btn-secondary" id="btnPrevStep" style="visibility: hidden;">Atrás</button>
+                        <button type="button" class="btn-primary-gradient" id="btnNextStep">Siguiente <i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="submit" class="btn-success-gradient" id="btnSubmitWizard" style="display: none;">Publicar Estacionamiento</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="js/common-dashboard.js"></script>
+    <script src="js/wizard-logic.js"></script>
+</body>
+</html>

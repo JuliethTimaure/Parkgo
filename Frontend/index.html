@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Go - Estaciona Fácil en Concepción</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-container">
+            <div class="logo">
+                <img src="Logo.png" alt="Park Go Logo">
+            </div>
+            
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="nav-buttons" id="navLinks">
+                <a href="#" class="nav-link">Inicio</a>
+                <a href="#como-funciona" class="nav-link">Cómo funciona</a>
+                <button class="btn-text" id="openLoginBtn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Ingresar</button>
+                <button class="btn-primary" id="openRegisterBtn">Crear Cuenta</button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <div class="badge">🚗 La red más grande de Concepción</div>
+            <h1>Tu estacionamiento, <br><span class="text-orange">al alcance de un clic.</span></h1>
+            <p>Conecta con dueños de estacionamientos y asegura tu lugar en segundos.</p>
+            
+            <div class="search-box">
+                <i class="fa-solid fa-location-dot search-icon"></i>
+                <input type="text" placeholder="¿A dónde vas? Ej: Plaza Independencia">
+                <button class="btn-search">Buscar</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="section" id="como-funciona">
+        <div class="container">
+            <div class="section-header">
+                <h2>¿Cómo funciona?</h2>
+                <p>Tres simples pasos para dejar de sufrir buscando estacionamiento.</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="icon-box"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h3>1. Busca</h3>
+                    <p>Encuentra estacionamientos disponibles cerca de ti en tiempo real.</p>
+                </div>
+                <div class="step-card">
+                    <div class="icon-box"><i class="fa-regular fa-calendar-check"></i></div>
+                    <h3>2. Reserva</h3>
+                    <p>Elige el horario que necesitas y asegura tu cupo.</p>
+                </div>
+                <div class="step-card">
+                    <div class="icon-box"><i class="fa-solid fa-square-parking"></i></div>
+                    <h3>3. Estaciona</h3>
+                    <p>Llega al lugar, muestra tu reserva y estaciona sin complicaciones.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-col">
+                <h3>Park<span class="text-orange">Go</span></h3>
+                <p>La solución de estacionamiento inteligente.</p>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Park Go. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content fade-in">
+            <span class="close-btn">&times;</span>
+            <div class="modal-header">
+                <h2>Bienvenido</h2>
+                <p>Ingresa tus credenciales</p>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="loginEmail" placeholder="ejemplo@correo.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <i class="fa-regular fa-eye toggle-password" data-target="loginPassword"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn-modal-submit">Iniciar Sesión</button>
+            </form>
+            <div class="modal-footer">
+                <p>¿Nuevo aquí? <a href="#" id="switchToRegister">Regístrate</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="modal-content modal-lg fade-in">
+            <span class="close-btn">&times;</span>
+            <div class="modal-header compact-header">
+                <h2>Crear Cuenta</h2>
+                <p>Únete a Park Go</p>
+            </div>
+            
+            <form id="registerForm" class="compact-form">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>RUT</label>
+                        <input type="text" id="regRut" placeholder="12.345.678-9" maxlength="12" required>
+                        <small id="rutFeedback" class="feedback-msg"></small>
+                    </div>
+                    <div class="input-group">
+                        <label>Teléfono</label>
+                        <div class="phone-wrapper">
+                            <div class="phone-prefix"><span class="flag-icon">🇨🇱</span> +56</div>
+                            <input type="tel" id="regTelefono" placeholder="9 1234 5678" maxlength="11" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Nombre</label>
+                        <input type="text" id="regNombre" placeholder="Tu nombre" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Apellido</label>
+                        <input type="text" id="regApellido" placeholder="Tu apellido" required>
+                    </div>
+                </div>
+
+                <div class="location-box">
+                    <h4 class="box-title">📍 Ubicación</h4>
+                    
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Región</label>
+                            <select id="regRegion" required class="form-select">
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Comuna</label>
+                            <select id="regComuna" required disabled class="form-select">
+                                <option value="">Selecciona región...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-address">
+                        <div class="input-group">
+                            <label>Calle / Avenida</label>
+                            <input type="text" id="regCalle" placeholder="Ej: Av. Paicaví" required>
+                        </div>
+                        <div class="input-group">
+                            <label>N°</label>
+                            <input type="tel" id="regNumero" placeholder="123" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Correo Electrónico</label>
+                        <input type="email" id="regEmail" placeholder="correo@ejemplo.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Contraseña</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="regPassword" placeholder="******" required>
+                            <i class="fa-regular fa-eye toggle-password" data-target="regPassword"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-modal-submit">Registrarse</button>
+            </form>
+            <div class="modal-footer compact-footer">
+                <p>¿Ya tienes cuenta? <a href="#" id="switchToLogin">Inicia Sesión</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

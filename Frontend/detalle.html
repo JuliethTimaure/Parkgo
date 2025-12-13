@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Estacionamiento - Park Go</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/details.css"> 
+</head>
+<body>
+
+    <nav class="navbar" style="position: relative; box-shadow: none; border-bottom: 1px solid #E2E8F0;">
+        <div class="container nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="Logo.png" alt="Park Go">
+            </div>
+            <div class="nav-buttons">
+                <a href="dashboard.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Volver al listado</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="details-container">
+        
+        <div class="breadcrumb" id="breadcrumb">
+            Cargando ubicación...
+        </div>
+
+        <div class="content-wrapper">
+            
+            <div class="main-info">
+                
+                <div class="gallery-hero">
+                    <img id="mainImage" src="" alt="Estacionamiento">
+                    <div class="gallery-badge"><i class="fa-solid fa-camera"></i> Ver Fotos</div>
+                </div>
+
+                <div class="property-header">
+                    <h1 id="detTitulo">Cargando título...</h1>
+                    <p class="location-text"><i class="fa-solid fa-location-dot"></i> <span id="detDireccion">...</span></p>
+                </div>
+
+                <div class="features-bar">
+                    <div class="feature-item">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                        <div>
+                            <span class="f-value" id="detDims">--</span>
+                            <span class="f-label">Dimensiones</span>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <div>
+                            <span class="f-value" id="detCobertura">--</span>
+                            <span class="f-label">Cobertura</span>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <div>
+                            <span class="f-value" id="detSeguridad">--</span>
+                            <span class="f-label">Seguridad</span>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa-regular fa-clock"></i>
+                        <div>
+                            <span class="f-value" id="detHorario">--</span>
+                            <span class="f-label">Acceso</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-block">
+                    <h3>Descripción</h3>
+                    <p id="detDescripcion" class="description-text">...</p>
+                </div>
+
+                <div class="section-block">
+                    <h3>Ubicación</h3>
+                    <p class="map-hint">La ubicación exacta se muestra tras reservar.</p>
+                    <div id="detailMap" class="detail-map"></div>
+                </div>
+
+            </div>
+
+            <aside class="sidebar-info">
+                <div class="price-card">
+                    <div class="price-header">
+                        <span class="price-label">Precio Mensual</span>
+                        <div class="price-amount" id="detPrecio">$0</div>
+                    </div>
+                    
+                    <hr class="divider">
+
+                    <div class="owner-profile">
+                        <img id="ownerImg" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Dueño">
+                        <div>
+                            <p class="owner-label">Publicado por</p>
+                            <h4 id="ownerName">Usuario</h4>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-whatsapp" id="btnWhatsapp">
+                            <i class="fa-brands fa-whatsapp"></i> Contactar al Dueño
+                        </button>
+                        <button class="btn-reserve" onclick="Swal.fire('Pronto', 'El sistema de reservas estará disponible en la v2', 'info')">
+                            Solicitar Reserva
+                        </button>
+                    </div>
+                    
+                    <p class="safety-note"><i class="fa-solid fa-shield"></i> Tu pago está protegido hasta que inicies el arriendo.</p>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+
+    <script src="js/details-logic.js"></script>
+</body>
+</html>
