@@ -30,7 +30,8 @@ router.get('/parkings/mine', verifyToken, parkingController.getMyParkings);
 router.get('/parkings/:id', parkingController.getParkingById); 
 router.post('/parkings/create', verifyToken, upload.array('fotos', 5), parkingController.createParking); 
 router.delete('/parkings/:id', verifyToken, parkingController.deleteParking); 
-
+router.put('/parkings/:id', verifyToken, upload.array('fotos', 5), parkingController.updateParking); 
+router.delete('/parkings/:id', verifyToken, parkingController.deleteParking);
 // === ARRIENDOS (RENT) ===
 router.post('/rent/create', verifyToken, rentController.createRent);
 router.get('/rent/owner', verifyToken, rentController.getOwnerRents); 

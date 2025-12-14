@@ -1,8 +1,8 @@
 const db = require('../db');
 const cloudinary = require('../cloudinary');
 
-// CREAR PUBLICACIÓN + ESTACIONAMIENTO
-exports.createParking = async (req, res) => {
+// 1. CREAR PUBLICACIÓN + ESTACIONAMIENTO
+const createParking = async (req, res) => {
     const client = await db.pool.connect();
     const userId = req.user.id;
 
@@ -11,11 +11,11 @@ exports.createParking = async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Extraer campos (Actualizado con nuevos campos de dirección)
+        // Extraer campos
         const { 
             titulo, descripcion, precio, 
             id_comuna, 
-            calle, numero_calle, n_estacionamiento, // Nuevos campos separados
+            calle, numero_calle, n_estacionamiento,
             latitud, longitud,           
             largo, ancho, altura,        
             seguridad, cobertura, 
@@ -34,7 +34,7 @@ exports.createParking = async (req, res) => {
              RETURNING id_estacionamiento`,
             [
                 userId, id_comuna, 
-                calle, numero_calle, n_estacionamiento, // Guardamos datos separados
+                calle, numero_calle, n_estacionamiento,
                 largo, ancho, altura, seguridad, cobertura,
                 latitud || null, longitud || null
             ]
@@ -42,8 +42,8 @@ exports.createParking = async (req, res) => {
         const estId = estRes.rows[0].id_estacionamiento;
 
         // 2. Insertar la Publicación con Horarios
-        const hStart = hora_apertura === 'null' || !hora_apertura ? null : hora_apertura;
-        const hEnd = hora_cierre === 'null' || !hora_cierre ? null : hora_cierre;
+        const hStart = (es_24_horas === 'true' || !hora_apertura) ? null : hora_apertura;
+        const hEnd = (es_24_horas === 'true' || !hora_cierre) ? null : hora_cierre;
 
         await client.query(
             `INSERT INTO publicacion (id_estacionamiento, titulo, descripcion, precio, es_24_horas, hora_apertura, hora_cierre, estado)
@@ -83,8 +83,8 @@ exports.createParking = async (req, res) => {
     }
 };
 
-// OBTENER TODOS (Público)
-exports.getAllParkings = async (req, res) => {
+// 2. OBTENER TODOS (Público)
+const getAllParkings = async (req, res) => {
     try {
         const result = await db.query(`
             SELECT p.id_publicacion, p.titulo, p.precio, p.estado, 
@@ -104,8 +104,8 @@ exports.getAllParkings = async (req, res) => {
     }
 };
 
-// OBTENER MIS ESTACIONAMIENTOS (Privado)
-exports.getMyParkings = async (req, res) => {
+// 3. OBTENER MIS ESTACIONAMIENTOS (Privado)
+const getMyParkings = async (req, res) => {
     try {
         const userId = req.user.id;
         const result = await db.query(`
@@ -125,8 +125,8 @@ exports.getMyParkings = async (req, res) => {
     }
 };
 
-// ELIMINAR
-exports.deleteParking = async (req, res) => {
+// 4. ELIMINAR
+const deleteParking = async (req, res) => {
     const userId = req.user.id;
     const { id } = req.params;
     
@@ -147,8 +147,8 @@ exports.deleteParking = async (req, res) => {
     }
 };
 
-// OBTENER DETALLE
-exports.getParkingById = async (req, res) => {
+// 5. OBTENER DETALLE
+const getParkingById = async (req, res) => {
     const { id } = req.params;
     if (!id || isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
@@ -183,4 +183,90 @@ exports.getParkingById = async (req, res) => {
         console.error(`❌ Error ID ${id}:`, err.message);
         res.status(500).json({ error: 'Error al obtener detalle' });
     }
+};
+
+// 6. ACTUALIZAR PUBLICACIÓN (NUEVA FUNCIÓN)
+const updateParking = async (req, res) => {
+    const client = await db.pool.connect();
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar propiedad
+        const check = await client.query(`
+            SELECT p.id_publicacion, p.id_estacionamiento 
+            FROM publicacion p
+            JOIN estacionamiento e ON p.id_estacionamiento = e.id_estacionamiento
+            WHERE p.id_publicacion = $1 AND e.id_usuario_propietario = $2
+        `, [id, userId]);
+
+        if (check.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'No autorizado o no existe' });
+        }
+
+        const idEstacionamiento = check.rows[0].id_estacionamiento;
+        const { 
+            titulo, descripcion, precio, es_24_horas, 
+            hora_apertura, hora_cierre, id_comuna, calle, numero_calle, n_estacionamiento,
+            largo, ancho, altura, seguridad, cobertura, latitud, longitud 
+        } = req.body;
+
+        // 2. Actualizar Estacionamiento
+        await client.query(`
+            UPDATE estacionamiento SET 
+                id_comuna = $1, calle = $2, numero_calle = $3, n_estacionamiento = $4,
+                largo = $5, ancho = $6, altura_maxima = $7, seguridad = $8, tipo_cobertura = $9,
+                latitud = $10, longitud = $11
+            WHERE id_estacionamiento = $12
+        `, [id_comuna, calle, numero_calle, n_estacionamiento, largo, ancho, altura, seguridad, cobertura, latitud, longitud, idEstacionamiento]);
+
+        // 3. Actualizar Publicación
+        const hStart = (es_24_horas === 'true' || !hora_apertura) ? null : hora_apertura;
+        const hEnd = (es_24_horas === 'true' || !hora_cierre) ? null : hora_cierre;
+
+        await client.query(`
+            UPDATE publicacion SET 
+                titulo = $1, descripcion = $2, precio = $3, 
+                es_24_horas = $4, hora_apertura = $5, hora_cierre = $6
+            WHERE id_publicacion = $7
+        `, [titulo, descripcion, precio, es_24_horas === 'true', hStart, hEnd, id]);
+
+        // (Opcional) Si suben fotos nuevas, se agregan a las existentes
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const b64 = Buffer.from(file.buffer).toString('base64');
+                const dataURI = "data:" + file.mimetype + ";base64," + b64;
+                const uploadRes = await cloudinary.uploader.upload(dataURI, {
+                    folder: 'aparca_conce_estacionamientos',
+                    transformation: [{ width: 1000, height: 750, crop: "limit" }]
+                });
+                await client.query(
+                    `INSERT INTO imagen_estacionamiento (id_estacionamiento, ruta_imagen) VALUES ($1, $2)`,
+                    [idEstacionamiento, uploadRes.secure_url]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ message: 'Publicación actualizada correctamente' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ error: 'Error al actualizar' });
+    } finally {
+        client.release();
+    }
+};
+
+module.exports = { 
+    createParking, 
+    getAllParkings, 
+    getMyParkings, 
+    deleteParking, 
+    getParkingById, 
+    updateParking 
 };
