@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Park Go</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 50px; height: 50px; background: #EFF6FF; color: #003B73; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+        .stat-info h3 { margin: 0; font-size: 1.5rem; color: #1E293B; }
+        .stat-info p { margin: 0; color: #64748B; font-size: 0.9rem; }
+
+        .admin-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .admin-table th, .admin-table td { padding: 15px; text-align: left; border-bottom: 1px solid #F1F5F9; font-size: 0.9rem; }
+        .admin-table th { background: #F8FAFC; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .admin-table tr:hover { background-color: #F8FAFC; }
+        
+        .role-tag { padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+        .role-admin { background: #E0E7FF; color: #3730A3; }
+        .role-user { background: #F1F5F9; color: #475569; }
+
+        .status-tag { padding: 4px 8px; border-radius: 20px; font-weight: 600; font-size: 0.75rem; }
+        .st-active { background: #DCFCE7; color: #166534; }
+        .st-suspended { background: #FEE2E2; color: #991B1B; }
+
+        .btn-ban { background: #FEF2F2; color: #EF4444; border: 1px solid #EF4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-ban:hover { background: #EF4444; color: white; }
+        .btn-unban { background: #ECFDF5; color: #10B981; border: 1px solid #10B981; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-unban:hover { background: #10B981; color: white; }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo"><img src="Logo.png" alt="Park Go"></div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="sidebar-item"><i class="fa-solid fa-magnifying-glass"></i> Buscar Parking</a></li>
+            <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
+            <li><a href="vehiculos.html" class="sidebar-item"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
+            <li><a href="mis-estacionamientos.html" class="sidebar-item"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+            <li><a href="gestion-arriendos.html" class="sidebar-item"><i class="fa-solid fa-file-invoice-dollar"></i> Gestión Arriendos</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <div>
+                <h1><i class="fa-solid fa-user-shield"></i> Administración</h1>
+                <p style="color:#64748B;">Control total de usuarios y estadísticas de la plataforma.</p>
+            </div>
+            <div class="user-badge">
+                <div class="user-avatar-sm" id="headerAvatar"><span id="headerInitial">A</span><img id="headerImg" src="" style="display:none"></div>
+                <span id="headerName">Admin</span>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                <div class="stat-info"><h3 id="statUsers">0</h3><p>Usuarios</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-square-parking"></i></div>
+                <div class="stat-info"><h3 id="statParks">0</h3><p>Estacionamientos</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-file-contract"></i></div>
+                <div class="stat-info"><h3 id="statRents">0</h3><p>Arriendos Activos</p></div>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <h3>Gestión de Usuarios</h3>
+            <div style="overflow-x: auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="5" style="text-align:center;">Cargando usuarios...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/common-dashboard.js"></script>
+    <script src="js/admin-logic.js"></script>
+</body>
+</html>

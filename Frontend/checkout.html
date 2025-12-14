@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Arriendo - Park Go</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <style>
+        /* === LAYOUT CHECKOUT === */
+        body { background-color: #F8FAFC; }
+        
+        .checkout-container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 40px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* === TARJETAS DE SECCIONES === */
+        .checkout-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #E2E8F0;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            color: #003B73;
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i { color: #FF6600; }
+
+        /* === CAJA DEL CONTRATO (ESTILO LEGAL) === */
+        .contract-viewer {
+            background-color: #F1F5F9;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            padding: 20px;
+            height: 250px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: #334155;
+            line-height: 1.7;
+            text-align: justify;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .contract-viewer p { margin-bottom: 12px; }
+        .contract-viewer::-webkit-scrollbar { width: 8px; }
+        .contract-viewer::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 4px; }
+
+        /* === RESUMEN DE ORDEN === */
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; color: #64748B; font-size: 0.95rem; }
+        .summary-row strong { color: #1E293B; }
+        .total-row { 
+            border-top: 2px dashed #E2E8F0; 
+            padding-top: 15px; margin-top: 15px; 
+            display: flex; justify-content: space-between; 
+            align-items: center;
+        }
+        .total-price { color: #003B73; font-size: 1.8rem; font-weight: 800; font-family: 'Poppins', sans-serif; }
+
+        /* === TARJETA DE CRÉDITO VISUAL === */
+        .credit-card-box {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border-radius: 16px;
+            padding: 25px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.2);
+            transition: transform 0.3s;
+        }
+        .credit-card-box::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        
+        .cc-chip { width: 40px; height: 28px; background: #FFD700; border-radius: 5px; margin-bottom: 20px; position: relative; overflow: hidden; }
+        .cc-chip::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid rgba(0,0,0,0.2); border-radius: 5px; }
+        
+        .cc-number { font-family: 'Courier New', monospace; font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 2px 2px rgba(0,0,0,0.3); }
+        
+        .cc-info { display: flex; justify-content: space-between; font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; }
+        .cc-val { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: bold; margin-top: 4px; }
+
+        /* === FORMULARIO DE PAGO === */
+        .payment-form label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
+        .payment-input {
+            width: 100%; padding: 12px; border: 1px solid #CBD5E1; border-radius: 8px;
+            font-size: 1rem; transition: 0.3s; background: #F8FAFC;
+        }
+        .payment-input:focus { background: white; border-color: #FF6600; box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1); outline: none; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        /* === BOTÓN PAGAR === */
+        .btn-pay {
+            width: 100%; background: #FF6600; color: white; border: none; padding: 16px;
+            border-radius: 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-pay:hover { background: #e65c00; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4); }
+        .btn-pay:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Responsive */
+        @media (max-width: 850px) { .checkout-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar" style="background: white; border-bottom: 1px solid #E2E8F0;">
+        <div class="container nav-container">
+            <div class="logo"><img src="Logo.png" alt="Park Go"></div>
+            <a href="dashboard.html" class="nav-link" style="color:#64748B;"><i class="fa-solid fa-arrow-left"></i> Cancelar y Volver</a>
+        </div>
+    </nav>
+
+    <div class="checkout-container">
+        
+        <div class="left-col">
+            
+            <div class="checkout-card">
+                <h3 class="section-title"><i class="fa-solid fa-sliders"></i> Configura tu Arriendo</h3>
+                
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label class="modern-label">Vehículo que ocupará el espacio</label>
+                        <select id="selVehiculo" class="payment-input">
+                            <option value="">Cargando flota...</option>
+                        </select>
+                        <small style="color:#64748B;">Solo podrás ingresar con este vehículo.</small>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="modern-label">Duración del contrato</label>
+                        <select id="selMeses" class="payment-input">
+                            <option value="1">1 Mes (Renovable)</option>
+                            <option value="3">3 Meses (5% dcto aplicado)</option>
+                            <option value="6">6 Meses (10% dcto aplicado)</option>
+                            <option value="12">1 Año (15% dcto aplicado)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkout-card">
+                <h3 class="section-title"><i class="fa-solid fa-file-signature"></i> Contrato Digital</h3>
+                
+                <div class="contract-viewer">
+                    <p style="text-align: center; font-weight: 700; font-size: 1rem;">CONTRATO DE ARRENDAMIENTO DE ESTACIONAMIENTO</p>
+                    <p>En Concepción, a <span id="fechaActual"></span>, comparecen por una parte el <strong>PROPIETARIO</strong> (individualizado en la plataforma ParkGo) y por otra el <strong>ARRENDATARIO</strong> (usuario conectado), quienes acuerdan lo siguiente:</p>
+                    <p><strong>PRIMERO (Objeto):</strong> El Propietario da en arrendamiento el uso y goce del estacionamiento seleccionado, para ser utilizado exclusivamente por el vehículo declarado en este formulario.</p>
+                    <p><strong>SEGUNDO (Renta):</strong> La renta será la indicada en el resumen de cobro, pagadera por adelantado mediante tarjeta de crédito o débito a través de la pasarela de pagos de ParkGo.</p>
+                    <p><strong>TERCERO (Suscripción):</strong> Si el Arrendatario selecciona la opción "Renovación Automática", autoriza expresamente a ParkGo a realizar el cargo mensual recurrente en el medio de pago inscrito hasta que se manifieste la voluntad de poner término al contrato.</p>
+                    <p><strong>CUARTO (Prohibiciones):</strong> Queda prohibido subarrendar, ceder el espacio, realizar mecánica, lavado de autos o almacenar objetos en el estacionamiento.</p>
+                    <p><strong>QUINTO (Responsabilidad):</strong> ParkGo actúa como intermediario tecnológico. El cuidado del vehículo corresponde al usuario, salvo negligencia imputable a las condiciones de seguridad ofrecidas por el Propietario.</p>
+                    <p><strong>SEXTO (Firma):</strong> La aceptación digital de este formulario mediante el botón de pago constituye firma electrónica simple bajo la Ley 19.799.</p>
+                </div>
+
+                <label style="display: flex; align-items: start; gap: 12px; cursor: pointer; padding: 10px; background: #F8FAFC; border-radius: 8px;">
+                    <input type="checkbox" id="checkContrato" style="margin-top: 4px; transform: scale(1.2);">
+                    <span style="font-size: 0.9rem; color: #334155; font-weight: 500;">He leído, comprendo y acepto íntegramente los términos del Contrato de Arrendamiento y las Políticas de Privacidad de Park Go.</span>
+                </label>
+            </div>
+
+        </div>
+
+        <div class="right-col">
+            
+            <div class="checkout-card">
+                <h3 class="section-title" style="font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Resumen de Orden</h3>
+                
+                <div class="summary-row">
+                    <span>Estacionamiento</span>
+                    <strong id="sumTitulo" style="max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">...</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Precio Mensual</span>
+                    <span id="sumUnitario">$0</span>
+                </div>
+                <div class="summary-row">
+                    <span>Periodo</span>
+                    <span id="sumPeriodo">1 Mes</span>
+                </div>
+                <div class="summary-row" style="color: #10B981; display: none;" id="rowDcto">
+                    <span>Descuento</span>
+                    <span id="sumDcto">-$0</span>
+                </div>
+
+                <div class="total-row">
+                    <span>Total a Pagar</span>
+                    <span class="total-price" id="sumTotal">$0</span>
+                </div>
+            </div>
+
+            <div class="credit-card-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div class="cc-chip"></div>
+                    <i class="fa-brands fa-cc-visa" style="font-size: 2rem; opacity: 0.8;"></i>
+                </div>
+                <div class="cc-number" id="visualCC">0000 0000 0000 0000</div>
+                <div class="cc-info">
+                    <div>
+                        <span>Titular</span>
+                        <div class="cc-val" id="visualName">TU NOMBRE</div>
+                    </div>
+                    <div>
+                        <span>Expira</span>
+                        <div class="cc-val" id="visualExp">MM/AA</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkout-card payment-form">
+                <div style="margin-bottom: 15px;">
+                    <label>Número de Tarjeta</label>
+                    <div style="position:relative;">
+                        <input type="text" class="payment-input" id="inpCC" placeholder="0000 0000 0000 0000" maxlength="19">
+                        <i class="fa-regular fa-credit-card" style="position:absolute; right:15px; top:15px; color:#94A3B8;"></i>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <label>Vencimiento</label>
+                        <input type="text" class="payment-input" id="inpExp" placeholder="MM/AA" maxlength="5">
+                    </div>
+                    <div>
+                        <label>CVC</label>
+                        <input type="password" class="payment-input" placeholder="123" maxlength="3">
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label>Nombre del Titular</label>
+                    <input type="text" class="payment-input" id="inpName" placeholder="Como aparece en la tarjeta">
+                </div>
+
+                <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #F1F5F9;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #334155;">
+                        <input type="checkbox" id="checkSuscripcion" checked>
+                        <span>Activar renovación automática mensual.</span>
+                    </label>
+                </div>
+
+                <button id="btnPagar" class="btn-pay">
+                    Pagar Ahora <i class="fa-solid fa-lock"></i>
+                </button>
+                
+                <p style="text-align: center; font-size: 0.75rem; color: #94A3B8; margin-top: 15px;">
+                    <i class="fa-solid fa-shield-halved"></i> Transacción encriptada de extremo a extremo.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const API_URL = 'http://localhost:3000/api';
+            const token = localStorage.getItem('token');
+            const params = new URLSearchParams(window.location.search);
+            const parkingId = params.get('id');
+
+            // --- VARIABLES Y FUNCIONES INICIALIZADAS ANTES DE USARSE ---
+            const selMeses = document.getElementById('selMeses'); // Declaración movida al inicio
+            let precioBase = 0;
+
+            // Función para actualizar el total (ahora selMeses ya existe)
+            function updateTotal() {
+                const meses = parseInt(selMeses.value);
+                let total = precioBase * meses;
+                let descuento = 0;
+
+                // Lógica de descuentos por tiempo
+                if (meses === 3) descuento = total * 0.05;
+                if (meses === 6) descuento = total * 0.10;
+                if (meses === 12) descuento = total * 0.15;
+
+                total = total - descuento;
+
+                document.getElementById('sumPeriodo').textContent = meses === 1 ? '1 Mes' : `${meses} Meses`;
+                
+                if(descuento > 0) {
+                    document.getElementById('rowDcto').style.display = 'flex';
+                    document.getElementById('sumDcto').textContent = `-$${parseInt(descuento).toLocaleString('es-CL')}`;
+                } else {
+                    document.getElementById('rowDcto').style.display = 'none';
+                }
+
+                document.getElementById('sumTotal').textContent = `$${parseInt(total).toLocaleString('es-CL')}`;
+            }
+
+            // Asignar el listener después de declarar la función
+            selMeses.addEventListener('change', updateTotal);
+
+            // Validar sesión
+            if(!token) window.location.href = 'index.html';
+            
+            // Validar ID
+            if(!parkingId) { 
+                Swal.fire('Error', 'No se especificó estacionamiento', 'error')
+                    .then(()=> window.location.href = 'dashboard.html'); 
+                return; 
+            }
+
+            // Poner fecha actual en contrato
+            document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            // --- 1. CARGAR DATOS DEL PARKING ---
+            try {
+                const res = await fetch(`${API_URL}/parkings/${parkingId}`);
+                if(!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+                
+                const parking = await res.json();
+                
+                precioBase = parseInt(parking.precio);
+                document.getElementById('sumTitulo').textContent = parking.titulo;
+                document.getElementById('sumUnitario').textContent = `$${precioBase.toLocaleString('es-CL')}`;
+                
+                // Ahora sí podemos llamar a updateTotal sin errores
+                updateTotal();
+            } catch(e) { 
+                console.error("Fallo al cargar parking:", e);
+                Swal.fire('Error', 'No se pudo cargar la información del estacionamiento.', 'error')
+                    .then(() => window.location.href = 'dashboard.html');
+            }
+
+            // --- 2. CARGAR VEHÍCULOS DEL USUARIO ---
+            try {
+                const res = await fetch(`${API_URL}/vehicles`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const vehicles = await res.json();
+                const sel = document.getElementById('selVehiculo');
+                
+                sel.innerHTML = '';
+                if(vehicles.length === 0) {
+                    sel.innerHTML = '<option value="">Sin vehículos registrados</option>';
+                    Swal.fire({
+                        title: '¡Falta un paso!',
+                        text: 'Debes registrar tu vehículo antes de arrendar.',
+                        icon: 'info',
+                        confirmButtonText: 'Ir a registrar',
+                        confirmButtonColor: '#003B73'
+                    }).then(() => window.location.href = 'vehiculos.html');
+                } else {
+                    vehicles.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.id_vehiculo;
+                        opt.textContent = `${v.nombre_marca} ${v.nombre_modelo} (${v.patente})`;
+                        sel.appendChild(opt);
+                    });
+                }
+            } catch(e) { console.error("Error cargando vehículos:", e); }
+
+            // --- 3. EFECTOS VISUALES TARJETA ---
+            const inpCC = document.getElementById('inpCC');
+            const visualCC = document.getElementById('visualCC');
+            const inpName = document.getElementById('inpName');
+            const visualName = document.getElementById('visualName');
+            const inpExp = document.getElementById('inpExp');
+            const visualExp = document.getElementById('visualExp');
+
+            inpCC.addEventListener('input', (e) => {
+                let val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                e.target.value = val;
+                visualCC.textContent = val || '0000 0000 0000 0000';
+            });
+
+            inpName.addEventListener('input', (e) => {
+                visualName.textContent = e.target.value.toUpperCase() || 'TU NOMBRE';
+            });
+
+            inpExp.addEventListener('input', (e) => {
+                let val = e.target.value.replace(/\D/g, '');
+                if(val.length > 2) val = val.slice(0,2) + '/' + val.slice(2,4);
+                e.target.value = val;
+                visualExp.textContent = val || 'MM/AA';
+            });
+
+            // --- 4. PROCESO DE PAGO ---
+            document.getElementById('btnPagar').addEventListener('click', async () => {
+                const idVehiculo = document.getElementById('selVehiculo').value;
+                const checkContrato = document.getElementById('checkContrato').checked;
+                const checkSuscripcion = document.getElementById('checkSuscripcion').checked;
+                const meses = selMeses.value;
+                
+                // Validaciones
+                if(!idVehiculo) return Swal.fire('Falta información', 'Selecciona un vehículo.', 'warning');
+                if(!inpCC.value || inpCC.value.length < 16) return Swal.fire('Tarjeta inválida', 'Revisa el número de tarjeta.', 'warning');
+                if(!checkContrato) return Swal.fire('Contrato', 'Debes leer y aceptar el contrato para continuar.', 'warning');
+
+                // UI Loading
+                const btn = document.getElementById('btnPagar');
+                const originalContent = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando con el Banco...';
+
+                // Simulación de delay de red (2 segundos)
+                setTimeout(async () => {
+                    try {
+                        const payload = {
+                            id_publicacion: parkingId,
+                            id_vehiculo: idVehiculo,
+                            meses: meses,
+                            metodo_pago: 'CREDIT_CARD',
+                            suscripcion: checkSuscripcion
+                        };
+
+                        const res = await fetch(`${API_URL}/rent/create`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await res.json();
+
+                        if(res.ok) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Pago Aprobado!',
+                                html: `Tu arriendo ha comenzado correctamente.<br>Contrato ID: <b>#${data.id_contrato}</b>`,
+                                confirmButtonText: 'Ver mis Arriendos',
+                                confirmButtonColor: '#003B73'
+                            }).then(() => window.location.href = 'gestion-arriendos.html');
+                        } else {
+                            throw new Error(data.error || 'Error en el servidor');
+                        }
+
+                    } catch(err) {
+                        Swal.fire('Transacción Rechazada', err.message, 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                    }
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

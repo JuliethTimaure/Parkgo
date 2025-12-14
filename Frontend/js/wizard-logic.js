@@ -1,18 +1,22 @@
+// === CONFIGURACIÓN MAPBOX ===
+// Token proporcionado
+mapboxgl.accessToken = 'pk.eyJ1IjoianVsaWV0aHRpbWF1cmUiLCJhIjoiY21qNjZqbTZjMDdnYzNncHl6N2dsY3RrYSJ9.XA6FvpuCq-Dq3l1K_Lg6ZQ';
+
+// Variables Globales
+let mapboxMap = null;
+let mapboxMarker = null;
+let currentLat = -36.8201; // Concepción Centro (Default)
+let currentLng = -73.0443; 
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuración Global ---
+    // --- CONFIGURACIÓN INICIAL ---
     const API_URL = 'http://localhost:3000/api';
     const token = localStorage.getItem('token');
     
     // Estado del Wizard
     let currentStep = 1;
     const totalSteps = 3;
-    let uploadedFiles = []; 
-    
-    // Estado del Mapa
-    let map = null;
-    let marker = null;
-    let currentLat = -36.8201; // Concepción Centro por defecto
-    let currentLng = -73.0443; 
+    let uploadedFiles = []; // Array para almacenar las fotos en memoria
 
     // Referencias DOM
     const views = {
@@ -30,11 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INICIALIZACIÓN ---
     loadMyParkings();
-    cargarRegionesWizard();
-    setupDynamicFields();      // Lógica Precio y Altura
-    setupAddressAutocomplete(); // Buscador de direcciones
+    cargarRegionesDesdeBD(); // Carga regiones desde el Backend
+    setupDynamicFields();     
 
-    // --- NAVEGACIÓN VISTAS ---
+    // --- NAVEGACIÓN ENTRE VISTAS (LISTA <-> WIZARD) ---
     if(buttons.start) {
         buttons.start.addEventListener('click', () => {
             toggleView(true);
@@ -57,21 +60,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleView(showWizard) {
-        views.list.style.display = showWizard ? 'none' : 'block';
-        views.wizard.style.display = showWizard ? 'block' : 'none';
+        if(views.list && views.wizard) {
+            views.list.style.display = showWizard ? 'none' : 'block';
+            views.wizard.style.display = showWizard ? 'block' : 'none';
+        }
         window.scrollTo(0,0);
     }
 
-    // --- CAMPOS DINÁMICOS (Precio y Altura) ---
+    // --- LÓGICA DE REGIONES Y COMUNAS (DESDE BD) ---
+    async function cargarRegionesDesdeBD() {
+        const regionSelect = document.getElementById('pRegion');
+        const comunaSelect = document.getElementById('pComuna');
+        if(!regionSelect) return;
+
+        try {
+            const res = await fetch(`${API_URL}/locations/regions`);
+            if(!res.ok) throw new Error("Error API");
+            const regiones = await res.json();
+            
+            regionSelect.innerHTML = '<option value="">Selecciona Región</option>';
+            regiones.forEach(reg => {
+                const opt = document.createElement('option');
+                opt.value = reg.id_region;
+                opt.textContent = reg.nombre_region;
+                regionSelect.appendChild(opt);
+            });
+
+            // Evento al cambiar región
+            regionSelect.onchange = async (e) => {
+                const idReg = e.target.value;
+                comunaSelect.innerHTML = '<option value="">Cargando...</option>';
+                comunaSelect.disabled = true;
+
+                if(idReg) {
+                    try {
+                        const resCom = await fetch(`${API_URL}/locations/comunas/${idReg}`);
+                        const comunas = await resCom.json();
+                        
+                        comunaSelect.innerHTML = '<option value="">Selecciona Comuna</option>';
+                        comunas.forEach(com => {
+                            const opt = document.createElement('option');
+                            opt.value = com.id_comuna;
+                            opt.textContent = com.nombre_comuna;
+                            comunaSelect.appendChild(opt);
+                        });
+                        comunaSelect.disabled = false;
+                    } catch (error) {
+                        console.error(error);
+                        comunaSelect.innerHTML = '<option value="">Error al cargar</option>';
+                    }
+                } else {
+                    comunaSelect.innerHTML = '<option value="">Selecciona Región primero</option>';
+                }
+            };
+        } catch (err) {
+            console.error("Error cargando regiones", err);
+            regionSelect.innerHTML = '<option value="">Error de conexión</option>';
+        }
+    }
+
+    // --- CAMPOS DINÁMICOS (PRECIO, ALTURA Y HORARIOS) ---
     function setupDynamicFields() {
-        // 1. Formato Precio en Tiempo Real
+        // Formato de Precio (Miles)
         const priceInput = document.getElementById('pPrecio');
         if(priceInput) {
             priceInput.addEventListener('input', (e) => {
-                // Eliminar todo lo que no sea número
                 let raw = e.target.value.replace(/\D/g, '');
                 if (raw) {
-                    // Formatear a pesos chilenos
                     e.target.value = new Intl.NumberFormat('es-CL').format(raw);
                 } else {
                     e.target.value = '';
@@ -79,29 +134,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 2. Lógica Altura (Solo habilitada si NO es Aire Libre)
-        // ADAPTADO PARA RADIO BUTTONS
+        // Habilitar/Deshabilitar Altura según Cobertura
         const altInput = document.getElementById('pAltura');
         const radiosCobertura = document.getElementsByName('cobertura');
 
         radiosCobertura.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const val = e.target.value;
-                // Si es Aire Libre -> DESHABILITAR
                 if (val === 'Aire Libre') {
                     altInput.disabled = true;
                     altInput.value = '';
                     altInput.placeholder = 'No aplica';
                 } else {
-                    // Si es Techado o Subterráneo -> HABILITAR
                     altInput.disabled = false;
                     altInput.placeholder = 'Ej: 2.1';
                 }
             });
         });
+
+        // --- NUEVA LÓGICA: MOSTRAR/OCULTAR HORARIOS ---
+        const selHorario = document.getElementById('pHorario');
+        const boxHoras = document.getElementById('timeInputsBox');
+        
+        if(selHorario && boxHoras) {
+            selHorario.addEventListener('change', (e) => {
+                // "false" es string porque viene del value del option
+                if(e.target.value === 'false') { 
+                    boxHoras.style.display = 'grid'; 
+                } else {
+                    boxHoras.style.display = 'none'; 
+                }
+            });
+        }
     }
 
-    // --- NAVEGACIÓN PASOS (Wizard) ---
+    // --- NAVEGACIÓN DEL WIZARD (PASOS) ---
     if(buttons.next) {
         buttons.next.addEventListener('click', () => {
             if (validateStep(currentStep)) {
@@ -123,44 +190,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderStep() {
-        // 1. Steppers Visuales
+        // 1. Actualizar Indicadores (Bolitas)
         for (let i = 1; i <= totalSteps; i++) {
             const el = document.getElementById(`stepIndicator${i}`);
-            el.classList.remove('active', 'completed');
-            if (i < currentStep) el.classList.add('completed');
-            if (i === currentStep) el.classList.add('active');
+            if(el) {
+                el.classList.remove('active', 'completed');
+                if (i < currentStep) el.classList.add('completed');
+                if (i === currentStep) el.classList.add('active');
+            }
         }
 
-        // 2. Mostrar Contenido
+        // 2. Mostrar Contenido del Paso
         document.querySelectorAll('.step-content').forEach(sc => sc.classList.remove('active'));
-        document.getElementById(`step${currentStep}`).classList.add('active');
+        const activeStep = document.getElementById(`step${currentStep}`);
+        if(activeStep) activeStep.classList.add('active');
 
-        // 3. Botones
+        // 3. Controlar Botones
         buttons.prev.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
 
         if (currentStep === totalSteps) {
-            // Estamos en el último paso (Mapa)
+            // Último paso: Mostrar botón Publicar y Mapa
             buttons.next.style.display = 'none';
             buttons.submit.style.display = 'inline-block';
             
-            // Inicializar mapa si no existe o redimensionar
-            setTimeout(() => {
-                if(!map) initLeafletMap();
-                else map.invalidateSize();
-            }, 200);
+            // Inicializar Mapbox con un pequeño delay para asegurar que el div es visible
+            setTimeout(initMapbox, 200);
         } else {
             buttons.next.style.display = 'inline-block';
             buttons.submit.style.display = 'none';
-            
-            // Texto dinámico
-            buttons.next.innerHTML = currentStep === 1 
-                ? 'Siguiente <i class="fa-solid fa-arrow-right"></i>' 
-                : 'Siguiente <i class="fa-solid fa-arrow-right"></i>';
+            buttons.next.innerHTML = 'Siguiente <i class="fa-solid fa-arrow-right"></i>';
         }
     }
 
     function validateStep(step) {
         const container = document.getElementById(`step${step}`);
+        if(!container) return true;
+        
         const inputs = container.querySelectorAll('input[required]:not([disabled]), select[required]:not([disabled]), textarea[required]');
         let isValid = true;
 
@@ -173,146 +238,143 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Validaciones Específicas
+        // --- NUEVA VALIDACIÓN: HORARIOS ---
+        if (step === 1) {
+            const es24 = document.getElementById('pHorario').value === 'true';
+            if (!es24) { // Si es horario restringido
+                const ha = document.getElementById('pHoraApertura');
+                const hc = document.getElementById('pHoraCierre');
+                
+                if(!ha.value) { isValid = false; ha.style.borderColor = '#EF4444'; }
+                else { ha.style.borderColor = '#E2E8F0'; }
+
+                if(!hc.value) { isValid = false; hc.style.borderColor = '#EF4444'; }
+                else { hc.style.borderColor = '#E2E8F0'; }
+            }
+        }
+
+        // Validación específica de fotos (Paso 2)
         if (step === 2 && uploadedFiles.length === 0) {
-            document.getElementById('noPhotosFeedback').style.display = 'block';
+            const fb = document.getElementById('noPhotosFeedback');
+            if(fb) fb.style.display = 'block';
             isValid = false;
         }
 
         if (!isValid) {
-            // Pequeño shake visual o alerta
             Swal.fire({
                 icon: 'error',
                 title: 'Faltan datos',
-                text: 'Por favor completa los campos obligatorios para continuar.',
+                text: 'Por favor completa los campos obligatorios.',
                 toast: true, position: 'top-end', timer: 3000, showConfirmButton: false
             });
         }
         return isValid;
     }
 
-    // --- MAPA LEAFLET & BUSCADOR ---
-    function initLeafletMap() {
-        if (map) return;
-        
-        map = L.map('leafletMap').setView([currentLat, currentLng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+    // --- INTEGRACIÓN MAPBOX (MAPA + BUSCADOR) ---
+    function initMapbox() {
+        if(mapboxMap) return; // Evitar reinicializar si ya existe
 
-        marker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
-
-        // Al mover el marcador manualmente
-        marker.on('dragend', function (e) {
-            const pos = marker.getLatLng();
-            currentLat = pos.lat;
-            currentLng = pos.lng;
-            console.log("Nueva coord manual:", currentLat, currentLng);
+        // 1. Crear el Mapa
+        mapboxMap = new mapboxgl.Map({
+            container: 'mapboxMap',
+            style: 'mapbox://styles/mapbox/streets-v12', // Estilo vectorial moderno
+            center: [currentLng, currentLat],
+            zoom: 14
         });
 
-        // Al hacer click en el mapa
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-            currentLat = e.latlng.lat;
-            currentLng = e.latlng.lng;
+        // Controles de zoom y rotación
+        mapboxMap.addControl(new mapboxgl.NavigationControl());
+
+        // 2. Crear Marcador (Arrastrable)
+        mapboxMarker = new mapboxgl.Marker({ draggable: true, color: "#FF6600" })
+            .setLngLat([currentLng, currentLat])
+            .addTo(mapboxMap);
+
+        // Evento: Al terminar de arrastrar el marcador
+        mapboxMarker.on('dragend', () => {
+            const lngLat = mapboxMarker.getLngLat();
+            currentLng = lngLat.lng;
+            currentLat = lngLat.lat;
+            console.log("Nueva posición manual:", currentLat, currentLng);
         });
-    }
 
-    function setupAddressAutocomplete() {
-        const input = document.getElementById('pDireccionTexto');
-        const list = document.getElementById('addressSuggestions');
-        const spinner = document.getElementById('searchSpinner');
-        let timer;
+        // Evento: Clic en el mapa mueve el marcador
+        mapboxMap.on('click', (e) => {
+            mapboxMarker.setLngLat(e.lngLat);
+            currentLng = e.lngLat.lng;
+            currentLat = e.lngLat.lat;
+        });
 
-        if(!input) return;
+        // 3. GEOCODER (Buscador de Direcciones)
+        const geocoderContainer = document.getElementById('geocoder');
+        if(geocoderContainer) {
+            geocoderContainer.innerHTML = ''; // Limpiar si ya existía
 
-        input.addEventListener('input', function() {
-            clearTimeout(timer);
-            const query = this.value;
-            
-            if (query.length < 4) {
-                list.innerHTML = '';
-                spinner.style.display = 'none';
-                return;
-            }
+            const geocoder = new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                mapboxgl: mapboxgl,
+                countries: 'cl', // Restringir búsqueda a Chile
+                placeholder: 'Escribe calle y número...',
+                marker: false // Usamos nuestro propio marcador
+            });
 
-            spinner.style.display = 'block'; // Mostrar carga
+            geocoderContainer.appendChild(geocoder.onAdd(mapboxMap));
 
-            timer = setTimeout(async () => {
-                // Nominatim API: Limitada a Chile (cl) y buscando direcciones
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cl&addressdetails=1&limit=5`;
+            // Evento: Cuando se selecciona una dirección
+            geocoder.on('result', (e) => {
+                const result = e.result;
+                const center = result.center; // [lng, lat]
                 
-                try {
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    
-                    list.innerHTML = ''; // Limpiar anteriores
-                    spinner.style.display = 'none';
+                // Mover mapa y marcador
+                mapboxMap.flyTo({ center: center, zoom: 16 });
+                mapboxMarker.setLngLat(center);
+                currentLng = center[0];
+                currentLat = center[1];
 
-                    if (data.length === 0) {
-                        list.innerHTML = '<div class="autocomplete-item" style="cursor:default; color:#999;">No se encontraron resultados</div>';
-                        return;
-                    }
-
-                    data.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'autocomplete-item';
-                        // Formato amigable: Calle, Ciudad, Región
-                        const display = `${item.address.road || item.address.pedestrian || ''} ${item.address.house_number || ''}, ${item.address.city || item.address.town || item.address.village || ''}`;
-                        div.textContent = display.length > 5 ? display : item.display_name; // Fallback al nombre completo si falla el formato
-                        
-                        div.onclick = () => {
-                            input.value = div.textContent; // Poner texto limpio
-                            list.innerHTML = '';
-                            
-                            // Actualizar Mapa
-                            currentLat = parseFloat(item.lat);
-                            currentLng = parseFloat(item.lon);
-                            
-                            if (map) {
-                                map.setView([currentLat, currentLng], 16);
-                                marker.setLatLng([currentLat, currentLng]);
-                            }
-                        };
-                        list.appendChild(div);
-                    });
-
-                } catch (err) {
-                    console.error(err);
-                    spinner.style.display = 'none';
-                }
-            }, 600); // Debounce de 600ms
-        });
-
-        // Cerrar al hacer click fuera
-        document.addEventListener('click', (e) => {
-            if (e.target !== input && e.target !== list) {
-                list.innerHTML = '';
-            }
-        });
+                // Autocompletar campos de texto (Parseo inteligente)
+                const address = result.text || ""; // Nombre de la calle
+                const number = (result.address || "") + ""; // Altura/Número
+                
+                if(document.getElementById('pCalle')) document.getElementById('pCalle').value = address;
+                if(document.getElementById('pNumeroCalle') && number) document.getElementById('pNumeroCalle').value = number;
+            });
+        }
     }
 
-    // --- FOTOS (Drag & Drop) ---
-    // NOTA: Se mantuvo la lógica original de drag and drop nativo
+    // --- GESTIÓN DE FOTOS (DRAG & DROP NATIVO RESTAURADO) ---
     const fileInput = document.getElementById('pInputFotos');
     const photoGrid = document.getElementById('photoSortableGrid');
 
     if(fileInput) {
         fileInput.onchange = (e) => {
             const newFiles = Array.from(e.target.files);
+            // Concatenar archivos nuevos a los ya existentes
             uploadedFiles = uploadedFiles.concat(newFiles);
+            // Limitar a 5 fotos (opcional)
+            if (uploadedFiles.length > 5) {
+                uploadedFiles = uploadedFiles.slice(0, 5);
+                Swal.fire('Límite alcanzado', 'Solo puedes subir máximo 5 fotos.', 'warning');
+            }
+            
             renderGallery();
-            document.getElementById('noPhotosFeedback').style.display = 'none';
+            
+            const fb = document.getElementById('noPhotosFeedback');
+            if(fb) fb.style.display = 'none';
         };
     }
 
     function renderGallery() {
+        if(!photoGrid) return;
         photoGrid.innerHTML = '';
+        
         uploadedFiles.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const item = document.createElement('div');
                 item.className = 'photo-draggable-item';
+                
+                // Habilitar Drag & Drop
                 item.draggable = true;
                 item.dataset.index = index;
                 
@@ -325,9 +387,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.querySelector('.remove-photo-btn').onclick = (ev) => {
                     ev.stopPropagation();
                     uploadedFiles.splice(index, 1);
-                    renderGallery();
+                    renderGallery(); // Re-renderizar
                 };
 
+                // Agregar Eventos de Drag
                 addDragHandlers(item);
                 photoGrid.appendChild(item);
             };
@@ -335,19 +398,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lógica Drag & Drop Nativo
+    // --- LÓGICA DE REORDENAMIENTO (DRAG & DROP) ---
     let dragStartIndex;
+
     function addDragHandlers(item) {
         item.addEventListener('dragstart', function() {
             dragStartIndex = +this.dataset.index;
             this.classList.add('dragging');
         });
-        item.addEventListener('dragover', (e) => e.preventDefault());
+
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Necesario para permitir el drop
+        });
+
         item.addEventListener('drop', function() {
             const dragEndIndex = +this.dataset.index;
             swapPhotos(dragStartIndex, dragEndIndex);
             this.classList.remove('dragging');
         });
+
         item.addEventListener('dragend', function() {
             this.classList.remove('dragging');
         });
@@ -360,69 +429,75 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGallery();
     }
 
-
-    // --- ENVIAR FORMULARIO ---
+    // --- ENVIAR FORMULARIO (PUBLISH) ---
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = buttons.submit;
+            const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
             btn.disabled = true;
 
             const formData = new FormData();
             
-            // Datos Texto
+            // Textos
             formData.append('titulo', document.getElementById('pTitulo').value);
             formData.append('descripcion', document.getElementById('pDesc').value);
-            
-            // Limpiar puntos del precio antes de enviar
             const cleanPrice = document.getElementById('pPrecio').value.replace(/\./g, '');
             formData.append('precio', cleanPrice);
             
-            formData.append('es_24_horas', document.getElementById('pHorario').value);
+            // --- HORARIOS (NUEVO) ---
+            const es24 = document.getElementById('pHorario').value;
+            formData.append('es_24_horas', es24);
             
-            // Ubicación
-            formData.append('id_comuna', document.getElementById('pComuna').value || 1); // Fallback
-            formData.append('calle', document.getElementById('pDireccionTexto').value);
-            formData.append('numero', 'S/N'); // Backend requiere este campo
+            if(es24 === 'false') {
+                formData.append('hora_apertura', document.getElementById('pHoraApertura').value);
+                formData.append('hora_cierre', document.getElementById('pHoraCierre').value);
+            }
+            
+            // Ubicación (Nuevos campos)
+            formData.append('id_comuna', document.getElementById('pComuna').value);
+            formData.append('calle', document.getElementById('pCalle').value);
+            formData.append('numero_calle', document.getElementById('pNumeroCalle').value);
+            formData.append('n_estacionamiento', document.getElementById('pNumEst').value);
             formData.append('latitud', currentLat);
             formData.append('longitud', currentLng);
 
-            // Características
+            // Dimensiones
             formData.append('largo', document.getElementById('pLargo').value || 0);
             formData.append('ancho', document.getElementById('pAncho').value || 0);
-            
             const alt = document.getElementById('pAltura');
             formData.append('altura', (!alt.disabled && alt.value) ? alt.value : 0);
             
-            // ** ADAPTADO: OBTENER VALORES DE RADIO BUTTONS **
-            const coberturaVal = document.querySelector('input[name="cobertura"]:checked').value;
-            const seguridadVal = document.querySelector('input[name="seguridad"]:checked').value;
+            // Radios y Checkboxes
+            const cob = document.querySelector('input[name="cobertura"]:checked');
+            if(cob) formData.append('cobertura', cob.value);
             
-            formData.append('cobertura', coberturaVal);
-            formData.append('seguridad', seguridadVal);
+            const segEls = document.querySelectorAll('input[name="seguridad"]:checked');
+            const segVals = Array.from(segEls).map(el => el.value).join(', ');
+            formData.append('seguridad', segVals);
 
-            // Foto Principal (La primera tras el reordenamiento)
-            if (uploadedFiles.length > 0) {
-                formData.append('imagen', uploadedFiles[0]);
-            }
+            // Fotos (Importante: nombre 'fotos' debe coincidir con backend)
+            uploadedFiles.forEach(file => {
+                formData.append('fotos', file);
+            });
 
             try {
                 const res = await fetch(`${API_URL}/parkings/create`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData // No poner Content-Type, fetch lo pone solo con el boundary
+                    body: formData // Fetch pone el Content-Type multipart/form-data automáticamente
                 });
 
                 if (res.ok) {
                     Swal.fire({
                         icon: 'success',
                         title: '¡Publicado con éxito!',
-                        text: 'Tu estacionamiento ya está visible para los conductores.',
+                        text: 'Tu estacionamiento ya está visible en el mapa.',
                         confirmButtonColor: '#003B73'
                     }).then(() => {
                         toggleView(false);
-                        loadMyParkings();
+                        loadMyParkings(); // Recargar lista
                         resetWizard();
                     });
                 } else {
@@ -430,9 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.error || 'Error desconocido');
                 }
             } catch (err) {
+                console.error(err);
                 Swal.fire('Error', err.message || 'No se pudo conectar al servidor', 'error');
             } finally {
-                btn.innerHTML = 'Publicar Estacionamiento';
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
@@ -444,14 +520,17 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedFiles = [];
         renderGallery();
         renderStep();
-        // Reset manual
-        document.getElementById('pAltura').disabled = true;
+        
+        // Reset estados visuales
+        if(document.getElementById('pAltura')) document.getElementById('pAltura').disabled = true;
+        if(document.getElementById('timeInputsBox')) document.getElementById('timeInputsBox').style.display = 'none';
     }
 
-    // --- CARGAR LISTA (Vista Principal) ---
+    // --- CARGAR LISTA DE PUBLICACIONES (DASHBOARD) ---
     async function loadMyParkings() {
         const container = document.getElementById('parkingsContainer');
         const empty = document.getElementById('parkingsEmptyState');
+        if(!container) return;
         
         try {
             const res = await fetch(`${API_URL}/parkings/mine`, { 
@@ -463,10 +542,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.length === 0) {
                 container.style.display = 'none';
-                empty.style.display = 'block';
+                if(empty) empty.style.display = 'block';
             } else {
                 container.style.display = 'grid';
-                empty.style.display = 'none';
+                if(empty) empty.style.display = 'none';
                 
                 data.forEach(p => {
                     const img = p.ruta_imagen || 'https://via.placeholder.com/400x300?text=Sin+Foto';
@@ -482,14 +561,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="parking-content">
                             <div class="parking-title">${p.titulo}</div>
                             <div class="parking-location">
-                                <i class="fa-solid fa-location-dot"></i> ${p.calle}
+                                <i class="fa-solid fa-location-dot"></i> ${p.calle} #${p.numero_calle || ''}
                             </div>
                             <div style="margin-top:auto; padding-top:15px; border-top:1px solid #eee; display:flex; gap:10px;">
                                 <button class="btn-secondary" style="font-size:0.8rem; padding:8px 15px; flex:1;" onclick="window.location.href='detalle.html?id=${p.id_publicacion}'">
                                     <i class="fa-solid fa-eye"></i> Ver
                                 </button>
-                                
-                                <button class="btn-delete" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:8px; padding:10px; cursor:pointer;" onclick="deleteParking(${p.id_publicacion})">
+                                <button class="btn-delete" type="button" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:8px; padding:10px; cursor:pointer;" onclick="deleteParking(${p.id_publicacion})">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
@@ -501,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { console.error(err); }
     }
     
-    // Función global para eliminar (requerido por onclick inline)
+    // Función global para eliminar
     window.deleteParking = async (id) => {
         Swal.fire({
             title: '¿Eliminar publicación?',
@@ -521,28 +599,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
-
-    function cargarRegionesWizard() {
-        const regionSelect = document.getElementById('pRegion');
-        const comunaSelect = document.getElementById('pComuna');
-        const datosChile = {
-            1: { nom: "Arica y Parinacota", comunas: {1: "Arica"} },
-            7: { nom: "Metropolitana", comunas: {30: "Santiago", 31: "Providencia"} },
-            11: { nom: "Biobío", comunas: {45: "Concepción", 46: "Talcahuano", 47: "San Pedro de la Paz"} }
-        };
-        regionSelect.innerHTML = '<option value="">Selecciona Región</option>';
-        Object.keys(datosChile).forEach(id => {
-            regionSelect.innerHTML += `<option value="${id}">${datosChile[id].nom}</option>`;
-        });
-        regionSelect.onchange = (e) => {
-            const idReg = e.target.value;
-            comunaSelect.innerHTML = '<option value="">Selecciona Comuna</option>';
-            if(idReg && datosChile[idReg]) {
-                comunaSelect.disabled = false;
-                Object.entries(datosChile[idReg].comunas).forEach(([idCom, nomCom]) => {
-                    comunaSelect.innerHTML += `<option value="${idCom}">${nomCom}</option>`;
-                });
-            } else { comunaSelect.disabled = true; }
-        };
-    }
 });

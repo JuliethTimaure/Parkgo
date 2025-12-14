@@ -8,14 +8,26 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/wizard.css"> 
+    
+    <style>
+        .mapboxgl-ctrl-geocoder { width: 100% !important; max-width: none !important; box-shadow: none !important; border: 1px solid #CBD5E1; border-radius: 12px; }
+        .mapboxgl-ctrl-geocoder--input { padding: 12px !important; height: auto !important; }
+        
+        /* Time inputs hidden by default */
+        .time-inputs-container { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body class="dashboard-body">
 
@@ -28,6 +40,7 @@
             <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
             <li><a href="vehiculos.html" class="sidebar-item"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
             <li><a href="mis-estacionamientos.html" class="sidebar-item active"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+            <li><a href="gestion-arriendos.html" class="sidebar-item"><i class="fa-solid fa-file-invoice-dollar"></i> Gestión Arriendos</a></li>
         </ul>
         <div class="sidebar-footer">
             <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
@@ -68,127 +81,102 @@
                 </div>
 
                 <div class="stepper-wrapper">
-                    <div class="stepper-item active" id="stepIndicator1">
-                        <div class="step-counter">1</div>
-                        <div class="step-name">Detalles</div>
-                    </div>
-                    <div class="stepper-item" id="stepIndicator2">
-                        <div class="step-counter">2</div>
-                        <div class="step-name">Galería</div>
-                    </div>
-                    <div class="stepper-item" id="stepIndicator3">
-                        <div class="step-counter">3</div>
-                        <div class="step-name">Ubicación</div>
-                    </div>
+                    <div class="stepper-item active" id="stepIndicator1"><div class="step-counter">1</div><div class="step-name">Detalles</div></div>
+                    <div class="stepper-item" id="stepIndicator2"><div class="step-counter">2</div><div class="step-name">Galería</div></div>
+                    <div class="stepper-item" id="stepIndicator3"><div class="step-counter">3</div><div class="step-name">Ubicación</div></div>
                 </div>
 
                 <form id="wizardForm">
                     
                     <div class="step-content active" id="step1">
-                        
                         <div class="form-section">
                             <h4 class="section-title"><i class="fa-solid fa-pen-to-square"></i> Información Básica</h4>
                             <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
                                 <div class="input-group">
                                     <label class="modern-label">Título del Anuncio*</label>
-                                    <input type="text" id="pTitulo" class="modern-input" placeholder="Ej: Estacionamiento seguro Centro Concepción" required>
+                                    <input type="text" id="pTitulo" class="modern-input" placeholder="Ej: Estacionamiento techado centro Concepción" required>
                                 </div>
                                 <div class="input-group">
                                     <label class="modern-label">Precio Mensual*</label>
                                     <div class="input-icon-wrapper">
                                         <span class="input-icon-symbol">$</span>
-                                        <input type="text" id="pPrecio" class="modern-input input-with-icon" placeholder="45.000" maxlength="12" required>
+                                        <input type="text" id="pPrecio" class="modern-input input-with-icon" placeholder="Ej: 50.000" maxlength="12" required>
                                     </div>
                                 </div>
                                 <div class="input-group full-width">
                                     <label class="modern-label">Descripción*</label>
-                                    <textarea id="pDesc" class="modern-input" rows="3" placeholder="Describe ventajas, accesos, cercanía a lugares de interés..." required></textarea>
+                                    <textarea id="pDesc" class="modern-input" rows="3" placeholder="Describe ventajas, cercanía a lugares, facilidad de acceso, etc..." required></textarea>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-section">
-                            <h4 class="section-title"><i class="fa-solid fa-layer-group"></i> Características del Espacio</h4>
+                            <h4 class="section-title"><i class="fa-solid fa-clock"></i> Disponibilidad Horaria</h4>
+                            <div class="input-group">
+                                <label class="modern-label">Tipo de Acceso</label>
+                                <select id="pHorario" class="modern-input">
+                                    <option value="true">Acceso 24/7 (Libre)</option>
+                                    <option value="false">Horario Restringido (Lunes a Viernes, etc.)</option>
+                                </select>
+                            </div>
+                            <div class="time-inputs-container" id="timeInputsBox">
+                                <div class="input-group">
+                                    <label class="modern-label">Hora Apertura</label>
+                                    <input type="time" id="pHoraApertura" class="modern-input">
+                                </div>
+                                <div class="input-group">
+                                    <label class="modern-label">Hora Cierre</label>
+                                    <input type="time" id="pHoraCierre" class="modern-input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4 class="section-title"><i class="fa-solid fa-layer-group"></i> Características</h4>
                             
-                            <label class="modern-label">Tipo de Cobertura</label>
-                            <div class="selection-grid">
+                            <label class="modern-label" style="margin-bottom:10px; display:block;">Tipo de Cobertura</label>
+                            <div class="selection-grid three-cols">
                                 <label class="selection-card">
                                     <input type="radio" name="cobertura" value="Aire Libre" checked>
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-sun"></i>
-                                        <span>Aire Libre</span>
-                                    </div>
+                                    <div class="card-content"><i class="fa-regular fa-sun"></i><span>Aire Libre</span></div>
                                 </label>
                                 <label class="selection-card">
                                     <input type="radio" name="cobertura" value="Techado">
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-warehouse"></i>
-                                        <span>Techado</span>
-                                    </div>
+                                    <div class="card-content"><i class="fa-solid fa-warehouse"></i><span>Techado</span></div>
                                 </label>
                                 <label class="selection-card">
                                     <input type="radio" name="cobertura" value="Subterraneo">
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-arrow-down"></i>
-                                        <span>Subterráneo</span>
-                                    </div>
+                                    <div class="card-content"><i class="fa-solid fa-arrow-down"></i><span>Subterráneo</span></div>
                                 </label>
                             </div>
 
-                            <label class="modern-label" style="margin-top: 20px;">Nivel de Seguridad</label>
+                            <label class="modern-label" style="margin-top:20px; margin-bottom:10px; display:block;">Seguridad (Selecciona múltiples)</label>
                             <div class="selection-grid four-cols">
-                                <label class="selection-card">
-                                    <input type="radio" name="seguridad" value="Ninguna" checked>
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-lock-open"></i>
-                                        <span>Básica</span>
-                                    </div>
+                                <label class="selection-card checkbox-card">
+                                    <input type="checkbox" name="seguridad" value="Porton Electrico">
+                                    <div class="card-content"><i class="fa-solid fa-door-closed"></i><span>Portón Eléc.</span></div>
                                 </label>
-                                <label class="selection-card">
-                                    <input type="radio" name="seguridad" value="Porton Electrico">
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-door-closed"></i>
-                                        <span>Portón</span>
-                                    </div>
+                                <label class="selection-card checkbox-card">
+                                    <input type="checkbox" name="seguridad" value="Camaras">
+                                    <div class="card-content"><i class="fa-solid fa-video"></i><span>Cámaras</span></div>
                                 </label>
-                                <label class="selection-card">
-                                    <input type="radio" name="seguridad" value="Camaras">
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-video"></i>
-                                        <span>Cámaras</span>
-                                    </div>
+                                <label class="selection-card checkbox-card">
+                                    <input type="checkbox" name="seguridad" value="Conserje">
+                                    <div class="card-content"><i class="fa-solid fa-user-shield"></i><span>Conserje</span></div>
                                 </label>
-                                <label class="selection-card">
-                                    <input type="radio" name="seguridad" value="Conserje">
-                                    <div class="card-content">
-                                        <i class="fa-solid fa-user-shield"></i>
-                                        <span>Conserje</span>
-                                    </div>
+                                <label class="selection-card checkbox-card">
+                                    <input type="checkbox" name="seguridad" value="Iluminacion">
+                                    <div class="card-content"><i class="fa-regular fa-lightbulb"></i><span>Luz</span></div>
                                 </label>
                             </div>
                         </div>
 
                         <div class="form-section">
+                            <h4 class="section-title"><i class="fa-solid fa-ruler-combined"></i> Dimensiones (Opcional)</h4>
                             <div class="form-grid three-cols">
-                                <div class="input-group">
-                                    <label class="modern-label">Largo (m)</label>
-                                    <input type="number" id="pLargo" class="modern-input" step="0.1" placeholder="Ej: 5.0">
-                                </div>
-                                <div class="input-group">
-                                    <label class="modern-label">Ancho (m)</label>
-                                    <input type="number" id="pAncho" class="modern-input" step="0.1" placeholder="Ej: 2.5">
-                                </div>
-                                <div class="input-group">
-                                    <label class="modern-label">Horario</label>
-                                    <select id="pHorario" class="modern-input">
-                                        <option value="true">24/7 (Acceso libre)</option>
-                                        <option value="false">Horario Restringido</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="input-group" style="margin-top: 10px;">
-                                <label class="modern-label">Altura Máxima (Solo si es techado)</label>
-                                <input type="number" id="pAltura" class="modern-input" step="0.1" placeholder="No aplica (Aire libre)" disabled>
+                                <div class="input-group"><label class="modern-label">Largo (m)</label><input type="number" id="pLargo" class="modern-input" placeholder="Ej: 5.0" step="0.1"></div>
+                                <div class="input-group"><label class="modern-label">Ancho (m)</label><input type="number" id="pAncho" class="modern-input" placeholder="Ej: 2.5" step="0.1"></div>
+                                <div class="input-group"><label class="modern-label">Altura Máx (m)</label><input type="number" id="pAltura" class="modern-input" placeholder="Ej: 2.1" step="0.1" disabled></div>
                             </div>
                         </div>
                     </div>
@@ -196,43 +184,56 @@
                     <div class="step-content" id="step2">
                        <div class="upload-container-modern">
                            <div class="upload-icon-circle"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-                           <h3 style="color:#1E293B;">Sube tus mejores fotos</h3>
-                           <p style="color:#64748B; font-size: 0.9rem;">La primera foto será la portada de tu anuncio.</p>
-                           
-                           <button type="button" class="btn-upload-trigger" onclick="document.getElementById('pInputFotos').click()">
-                               Elegir Imágenes
-                           </button>
+                           <h3 style="color:#1E293B;">Sube tus fotos</h3>
+                           <p style="color:#64748B; font-size: 0.9rem;">Sube al menos 1 foto. Arrastra para reordenar.</p>
+                           <button type="button" class="btn-upload-trigger" onclick="document.getElementById('pInputFotos').click()">Seleccionar Fotos</button>
                            <input type="file" id="pInputFotos" multiple accept="image/*" style="display: none;">
                        </div>
                        
                        <div class="photos-sortable-grid" id="photoSortableGrid"></div>
                        <p id="noPhotosFeedback" style="color: #EF4444; font-size: 0.9rem; margin-top: 15px; display: none; text-align:center; font-weight:600;">
-                           <i class="fa-solid fa-triangle-exclamation"></i> Debes subir al menos una foto para continuar.
+                           <i class="fa-solid fa-triangle-exclamation"></i> Debes subir al menos una foto para publicar.
                        </p>
                    </div>
 
                     <div class="step-content" id="step3">
                         <div class="form-grid two-cols">
-                            <div class="input-group"><label class="modern-label">Región*</label><select id="pRegion" class="modern-input" required><option value="">Cargando...</option></select></div>
-                            <div class="input-group"><label class="modern-label">Comuna*</label><select id="pComuna" class="modern-input" required disabled><option>Selecciona Región</option></select></div>
-                            
-                            <div class="input-group full-width">
-                                <label class="modern-label">Buscar Dirección Exacta*</label>
-                                <div class="autocomplete-wrapper">
-                                    <input type="text" id="pDireccionTexto" class="modern-input" placeholder="Ej: Calle Los Carrera 555, Concepción" required autocomplete="off">
-                                    <i class="fa-solid fa-circle-notch fa-spin search-loading" id="searchSpinner"></i>
-                                    <div id="addressSuggestions" class="autocomplete-items"></div>
-                                </div>
-                                <p style="color: #64748B; font-size: 0.8rem; margin-top: 5px;">
-                                    Escribe y selecciona una opción de la lista para ubicar el mapa.
-                                </p>
+                            <div class="input-group">
+                                <label class="modern-label">Región*</label>
+                                <select id="pRegion" class="modern-input" required>
+                                    <option value="">Cargando...</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label class="modern-label">Comuna*</label>
+                                <select id="pComuna" class="modern-input" required disabled>
+                                    <option>Selecciona Región</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group full-width" style="margin-bottom: 20px;">
+                            <label class="modern-label">Buscar Dirección exacta (Mapbox)</label>
+                            <div id="geocoder" class="geocoder"></div>
+                        </div>
+
+                        <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
+                            <div class="input-group">
+                                <label class="modern-label">Calle / Avenida*</label>
+                                <input type="text" id="pCalle" class="modern-input" placeholder="Autocompletado" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="modern-label">Número*</label>
+                                <input type="text" id="pNumeroCalle" class="modern-input" placeholder="123" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="modern-label">N° Estac.*</label>
+                                <input type="text" id="pNumEst" class="modern-input" placeholder="Ej: 45-B" required>
                             </div>
                         </div>
                         
-                        <div id="leafletMap" class="map-container shadow-map"></div>
-                        <p style="font-size: 0.85rem; color: #64748B; margin-top: 10px; text-align: center; background: #F8FAFC; padding: 10px; border-radius: 8px;">
-                            <i class="fa-solid fa-hand-pointer"></i> <b>Tip:</b> Si la ubicación no es exacta, arrastra el marcador azul en el mapa.
-                        </p>
+                        <div id="mapboxMap" class="map-container shadow-map"></div>
+                        <p style="font-size:0.8rem; color:#64748B; margin-top:5px; text-align:center;">Arrastra el marcador naranja para precisar la ubicación.</p>
                     </div>
 
                     <div class="wizard-footer">

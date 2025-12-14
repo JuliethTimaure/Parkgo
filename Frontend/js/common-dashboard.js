@@ -14,18 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // === 2. LÓGICA DEL SIDEBAR (Menú Lateral) ===
     
     // A) Marcar Activo Automáticamente
-    // Detecta el nombre del archivo actual (ej: 'vehiculos.html') y activa el link correspondiente
     const currentPage = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('.sidebar-item');
 
     sidebarLinks.forEach(link => {
-        // Limpiar activos previos por si acaso
         link.classList.remove('active');
-        
-        // Obtener el href del link (ej: 'vehiculos.html')
         const linkPage = link.getAttribute('href');
-
-        // Si coincide con la página actual, marcarlo
         if (linkPage === currentPage || (currentPage === '' && linkPage === 'dashboard.html')) {
             link.classList.add('active');
         }
@@ -81,6 +75,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                         headerInitial.style.display = 'flex';
                     }
                 }
+
+                // === NUEVO: DETECCIÓN DE ADMIN (ROL 3) ===
+                if (user.id_rol === 3) {
+                    const menu = document.querySelector('.sidebar-menu');
+                    // Verificar que no exista ya para no duplicarlo
+                    if (menu && !document.getElementById('adminLinkItem')) {
+                        const adminLi = document.createElement('li');
+                        const isActive = currentPage === 'admin-panel.html' ? 'active' : '';
+                        
+                        adminLi.innerHTML = `
+                            <a href="admin-panel.html" id="adminLinkItem" class="sidebar-item ${isActive}" style="color:#003B73; background:#EFF6FF; border:1px solid #DBEAFE; margin-top:10px;">
+                                <i class="fa-solid fa-user-shield"></i> Administración
+                            </a>`;
+                        
+                        // Insertar al final del menú
+                        menu.appendChild(adminLi);
+                    }
+                }
+                // === FIN NUEVO ===
+
             } else {
                 // Si el token es inválido (ej: expiró), cerrar sesión
                 console.warn('Sesión expirada');

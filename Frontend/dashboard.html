@@ -11,6 +11,159 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    
+    <style>
+        /* ESTILOS ESPECÍFICOS PARA LA BARRA DE BÚSQUEDA MEJORADA */
+        .advanced-search-container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            margin-bottom: 30px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .search-grid {
+            display: grid;
+            /* === CAMBIO CLAVE AQUÍ: Ajuste de anchos === */
+            /* Antes: 2fr 1.2fr 1fr 1fr auto */
+            /* Ahora: 1.5fr (Ubicación) | 1.6fr (Precio - MÁS ANCHO) | 0.9fr (Tipo) | 0.9fr (Ordenar) | auto (Botón) */
+            grid-template-columns: 1.5fr 1.6fr 0.9fr 0.9fr auto;
+            gap: 15px; /* Gap ligeramente reducido para aprovechar espacio */
+            align-items: end;
+        }
+
+        .search-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+
+        .search-field label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            background: #F8FAFC;
+            height: 45px;
+            color: #1E293B;
+            font-weight: 500;
+        }
+
+        .search-input:focus {
+            background: white;
+            border-color: #FF6600;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.1);
+        }
+
+        /* === MEJORA DE INPUTS DE PRECIO === */
+        .price-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .currency-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .currency-symbol {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94A3B8;
+            font-weight: 600;
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .price-input {
+            padding-left: 25px !important; /* Espacio para el $ */
+        }
+
+        /* === BOTÓN BUSCAR === */
+        .btn-search-main {
+            height: 45px;
+            padding: 0 25px;
+            background: #FF6600;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(255, 102, 0, 0.2);
+        }
+
+        .btn-search-main:hover {
+            background: #e65c00;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 102, 0, 0.3);
+        }
+
+        /* === BOTÓN PUBLICAR (Jerarquía mejorada) === */
+        .btn-publish {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #003B73; /* Azul primario */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 59, 115, 0.2);
+        }
+
+        .btn-publish:hover {
+            background-color: #002a52;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 59, 115, 0.3);
+        }
+
+        .results-bar {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #F1F5F9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .search-grid { grid-template-columns: 1fr 1fr; }
+            .btn-search-main { grid-column: span 2; }
+        }
+        @media (max-width: 600px) {
+            .search-grid { grid-template-columns: 1fr; }
+            .btn-search-main { grid-column: span 1; }
+            .price-group { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
 </head>
 <body class="dashboard-body">
 
@@ -23,6 +176,7 @@
             <li><a href="perfil.html" class="sidebar-item"><i class="fa-regular fa-user"></i> Mi Perfil</a></li>
             <li><a href="vehiculos.html" class="sidebar-item"><i class="fa-solid fa-car"></i> Mis Vehículos</a></li>
             <li><a href="mis-estacionamientos.html" class="sidebar-item"><i class="fa-solid fa-square-parking"></i> Mis Publicaciones</a></li>
+            <li><a href="gestion-arriendos.html" class="sidebar-item"><i class="fa-solid fa-file-invoice-dollar"></i> Gestión Arriendos</a></li>
         </ul>
         <div class="sidebar-footer">
             <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
@@ -41,19 +195,59 @@
             </div>
         </header>
 
-        <div class="filters-bar" style="justify-content: space-between;">
-            <div style="display: flex; gap: 10px; flex: 1;">
-                <input type="text" id="searchLocation" class="search-input-lg" placeholder="📍 ¿En qué comuna buscas? (Ej: Concepción)">
-                <select class="filter-select" id="filterPrice">
-                    <option value="">Ordenar por Precio</option>
-                    <option value="asc">Menor precio</option>
-                    <option value="desc">Mayor precio</option>
-                </select>
-                <button class="btn-primary" id="btnFilter">Filtrar</button>
+        <div class="advanced-search-container">
+            <div class="search-grid">
+                
+                <div class="search-field">
+                    <label><i class="fa-solid fa-location-dot"></i> ¿Dónde?</label>
+                    <input type="text" id="searchLocation" class="search-input" placeholder="Comuna, calle o título...">
+                </div>
+
+                <div class="search-field">
+                    <label><i class="fa-solid fa-dollar-sign"></i> Precio Mensual</label>
+                    <div class="price-group">
+                        <div class="currency-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="text" id="minPrice" class="search-input price-input" placeholder="Mín" maxlength="9">
+                        </div>
+                        <div class="currency-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="text" id="maxPrice" class="search-input price-input" placeholder="Máx" maxlength="9">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-field">
+                    <label><i class="fa-solid fa-warehouse"></i> Tipo</label>
+                    <select id="filterType" class="search-input" style="cursor: pointer;">
+                        <option value="">Todos</option>
+                        <option value="Techado">Techado</option>
+                        <option value="Aire Libre">Aire Libre</option>
+                        <option value="Subterraneo">Subterráneo</option>
+                    </select>
+                </div>
+
+                <div class="search-field">
+                    <label><i class="fa-solid fa-sort"></i> Ordenar</label>
+                    <select id="filterSort" class="search-input" style="cursor: pointer;">
+                        <option value="">Por defecto</option>
+                        <option value="asc">Menor precio</option>
+                        <option value="desc">Mayor precio</option>
+                    </select>
+                </div>
+
+                <button class="btn-search-main" id="btnApplyFilters">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                </button>
             </div>
-            <a href="mis-estacionamientos.html" class="btn-primary" style="background-color: #003B73; text-decoration: none; margin-left: 10px;">
-                <i class="fa-solid fa-plus"></i> Publicar Espacio
-            </a>
+            
+            <div class="results-bar">
+                <small style="color: #64748B; font-weight: 500;" id="resultCount">Buscando...</small>
+                
+                <a href="mis-estacionamientos.html" class="btn-publish">
+                    <i class="fa-solid fa-plus"></i> Publicar Espacio
+                </a>
+            </div>
         </div>
 
         <div id="parkingsGrid" class="parkings-grid">
@@ -67,12 +261,43 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const grid = document.getElementById('parkingsGrid');
+            const resultCount = document.getElementById('resultCount');
+            
+            // Referencias Filtros
             const searchInput = document.getElementById('searchLocation');
-            const filterPrice = document.getElementById('filterPrice');
-            let allParkings = [];
+            const minPriceInput = document.getElementById('minPrice');
+            const maxPriceInput = document.getElementById('maxPrice');
+            const typeSelect = document.getElementById('filterType');
+            const sortSelect = document.getElementById('filterSort');
+            const btnApply = document.getElementById('btnApplyFilters');
 
+            let allParkings = [];
+            let debounceTimer;
+
+            // --- FUNCIÓN PARA FORMATEAR PRECIO CON PUNTOS ---
+            function formatCurrencyInput(input) {
+                input.addEventListener('input', (e) => {
+                    // 1. Eliminar todo lo que no sea número
+                    let rawValue = e.target.value.replace(/\D/g, '');
+                    
+                    // 2. Si hay valor, formatear con puntos. Si no, dejar vacío.
+                    if (rawValue) {
+                        e.target.value = parseInt(rawValue).toLocaleString('es-CL');
+                    } else {
+                        e.target.value = '';
+                    }
+                    
+                    // 3. Activar búsqueda automática (debounce)
+                    triggerAutoSearch();
+                });
+            }
+
+            // Aplicar formato a los inputs de precio
+            formatCurrencyInput(minPriceInput);
+            formatCurrencyInput(maxPriceInput);
+
+            // --- 1. Cargar Datos Iniciales ---
             try {
-                // Fetch público para obtener estacionamientos
                 const res = await fetch('http://localhost:3000/api/parkings');
                 allParkings = await res.json();
                 renderParkings(allParkings);
@@ -80,19 +305,25 @@
                 grid.innerHTML = '<p style="text-align:center; width:100%">Error cargando datos del servidor.</p>';
             }
 
+            // --- 2. Renderizado ---
             function renderParkings(data) {
                 grid.innerHTML = '';
+                resultCount.textContent = `${data.length} resultado(s) encontrado(s)`;
+
                 if(data.length === 0) {
                     grid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <i class="fa-solid fa-map-location-dot"></i>
-                            <p>No se encontraron estacionamientos con esos filtros.</p>
+                        <div class="empty-state" style="grid-column: 1/-1; text-align:center; padding: 40px;">
+                            <i class="fa-solid fa-magnifying-glass" style="font-size:3rem; color:#E2E8F0; margin-bottom:15px;"></i>
+                            <h3 style="color:#64748B;">Sin resultados</h3>
+                            <p style="color:#94A3B8;">Intenta ajustar tus filtros de búsqueda.</p>
                         </div>`;
                     return;
                 }
+                
                 data.forEach(p => {
                     const img = p.ruta_imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen';
                     const precioFmt = parseInt(p.precio).toLocaleString('es-CL');
+                    const badgeCobertura = p.tipo_cobertura || 'N/A';
                     
                     const card = `
                         <div class="parking-card">
@@ -107,7 +338,7 @@
                                 </div>
                                 <div class="parking-features">
                                     <span class="feature-pill"><i class="fa-solid fa-shield-halved"></i> ${p.seguridad || 'Estándar'}</span>
-                                    <span class="feature-pill"><i class="fa-solid fa-warehouse"></i> ${p.tipo_cobertura || 'N/A'}</span>
+                                    <span class="feature-pill"><i class="fa-solid fa-warehouse"></i> ${badgeCobertura}</span>
                                 </div>
                                 <button class="btn-view-parking" onclick="window.location.href='detalle.html?id=${p.id_publicacion}'">Ver Detalles</button>
                             </div>
@@ -116,20 +347,62 @@
                 });
             }
 
-            // Lógica de Filtro Front-End
-            document.getElementById('btnFilter').addEventListener('click', () => {
+            // --- 3. Lógica de Filtrado ---
+            function applyFilters() {
                 const term = searchInput.value.toLowerCase();
-                let filtered = allParkings.filter(p => 
-                    p.nombre_comuna.toLowerCase().includes(term) || 
-                    p.calle.toLowerCase().includes(term) ||
-                    p.titulo.toLowerCase().includes(term)
-                );
+                // Limpiar puntos antes de parsear para comparar valores numéricos reales
+                const minVal = minPriceInput.value.replace(/\./g, '');
+                const maxVal = maxPriceInput.value.replace(/\./g, '');
                 
-                if(filterPrice.value === 'asc') filtered.sort((a,b) => a.precio - b.precio);
-                if(filterPrice.value === 'desc') filtered.sort((a,b) => b.precio - a.precio);
+                const min = minVal ? parseInt(minVal) : 0;
+                const max = maxVal ? parseInt(maxVal) : Infinity;
+                
+                const type = typeSelect.value;
+                const sort = sortSelect.value;
+
+                let filtered = allParkings.filter(p => {
+                    // Texto (Titulo, Comuna o Calle)
+                    const matchText = 
+                        p.nombre_comuna.toLowerCase().includes(term) || 
+                        p.calle.toLowerCase().includes(term) ||
+                        p.titulo.toLowerCase().includes(term);
+                    
+                    // Precio
+                    const price = parseInt(p.precio);
+                    const matchPrice = price >= min && price <= max;
+
+                    // Tipo Cobertura
+                    const matchType = type === "" || p.tipo_cobertura === type;
+
+                    return matchText && matchPrice && matchType;
+                });
+                
+                // Ordenamiento
+                if(sort === 'asc') filtered.sort((a,b) => a.precio - b.precio);
+                if(sort === 'desc') filtered.sort((a,b) => b.precio - a.precio);
                 
                 renderParkings(filtered);
-            });
+            }
+
+            // --- 4. AUTO-BÚSQUEDA ---
+            
+            // A) Debounce para inputs de texto (espera 500ms al dejar de escribir)
+            function triggerAutoSearch() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    applyFilters();
+                }, 500);
+            }
+
+            searchInput.addEventListener('input', triggerAutoSearch);
+            // Nota: Los inputs de precio ya llaman a triggerAutoSearch en su event listener propio
+
+            // B) Búsqueda inmediata para Dropdowns
+            typeSelect.addEventListener('change', applyFilters);
+            sortSelect.addEventListener('change', applyFilters);
+
+            // C) Botón manual (por si acaso)
+            btnApply.addEventListener('click', applyFilters);
         });
     </script>
 </body>

@@ -10,14 +10,56 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <style>
+        .hero {
+            background-image: url('https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=1920&auto=format&fit=crop');
+            background-position: center bottom;
+        }
+        
+        .section-preview {
+            background-color: #F8FAFC;
+            padding: 60px 0; /* Un poco menos de padding vertical */
+        }
+        
+        .preview-grid {
+            display: grid;
+            /* Tarjetas más chicas (min 250px) y auto-fill para que no se estiren si hay pocas */
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px; /* Gap reducido */
+            margin-top: 30px;
+        }
+
+        .cta-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .btn-outline-primary {
+            border: 2px solid #003B73;
+            color: #003B73;
+            background: transparent;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.95rem;
+        }
+        .btn-outline-primary:hover {
+            background: #003B73;
+            color: white;
+        }
+    </style>
 </head>
 <body>
 
     <nav class="navbar">
         <div class="container nav-container">
             <div class="logo">
-                <img src="Logo.png" alt="Park Go Logo">
+                <img src="Logo.png" alt="Park Go">
             </div>
             
             <button class="mobile-menu-btn" id="mobileMenuBtn">
@@ -26,6 +68,7 @@
 
             <div class="nav-buttons" id="navLinks">
                 <a href="#" class="nav-link">Inicio</a>
+                <a href="#destacados" class="nav-link">Disponibles</a>
                 <a href="#como-funciona" class="nav-link">Cómo funciona</a>
                 <button class="btn-text" id="openLoginBtn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Ingresar</button>
                 <button class="btn-primary" id="openRegisterBtn">Crear Cuenta</button>
@@ -36,19 +79,36 @@
     <header class="hero">
         <div class="hero-overlay"></div>
         <div class="container hero-content">
-            <div class="badge">🚗 La red más grande de Concepción</div>
-            <h1>Tu estacionamiento, <br><span class="text-orange">al alcance de un clic.</span></h1>
-            <p>Conecta con dueños de estacionamientos y asegura tu lugar en segundos.</p>
+            <div class="badge"><i class="fa-solid fa-star"></i> La red N°1 en Concepción</div>
+            <h1>Tu estacionamiento, <br><span class="text-orange">seguro y sin vueltas.</span></h1>
+            <p>Conecta con dueños de espacios verificados y reserva tu lugar hoy mismo.</p>
             
-            <div class="search-box">
-                <i class="fa-solid fa-location-dot search-icon"></i>
-                <input type="text" placeholder="¿A dónde vas? Ej: Plaza Independencia">
-                <button class="btn-search">Buscar</button>
-            </div>
+            <button class="btn-primary" onclick="checkAuth()" style="padding: 12px 30px; font-size: 1.1rem; margin-top: 10px;">
+                Comenzar ahora
+            </button>
         </div>
     </header>
 
-    <section class="section" id="como-funciona">
+    <section class="section-preview" id="destacados">
+        <div class="container">
+            <div class="section-header" style="margin-bottom: 30px;">
+                <h2>Últimos Publicados</h2>
+                <p>Explora algunos de los espacios disponibles ahora.</p>
+            </div>
+            
+            <div id="homeParkingGrid" class="preview-grid">
+                <div style="grid-column:1/-1; text-align:center; color:#64748B;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando espacios...
+                </div>
+            </div>
+
+            <div class="cta-container">
+                <button class="btn-outline-primary" onclick="checkAuth()">Ver todos los estacionamientos <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="como-funciona" style="background: white;">
         <div class="container">
             <div class="section-header">
                 <h2>¿Cómo funciona?</h2>
@@ -63,12 +123,12 @@
                 <div class="step-card">
                     <div class="icon-box"><i class="fa-regular fa-calendar-check"></i></div>
                     <h3>2. Reserva</h3>
-                    <p>Elige el horario que necesitas y asegura tu cupo.</p>
+                    <p>Elige el horario que necesitas y asegura tu cupo pagando online.</p>
                 </div>
                 <div class="step-card">
                     <div class="icon-box"><i class="fa-solid fa-square-parking"></i></div>
                     <h3>3. Estaciona</h3>
-                    <p>Llega al lugar, muestra tu reserva y estaciona sin complicaciones.</p>
+                    <p>Llega al lugar, contacta al dueño por WhatsApp y estaciona.</p>
                 </div>
             </div>
         </div>
@@ -78,7 +138,7 @@
         <div class="container footer-content">
             <div class="footer-col">
                 <h3>Park<span class="text-orange">Go</span></h3>
-                <p>La solución de estacionamiento inteligente.</p>
+                <p>La solución de estacionamiento inteligente en el Biobío.</p>
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2024 Park Go. Todos los derechos reservados.</p>
@@ -166,7 +226,7 @@
                         </div>
                     </div>
 
-                    <div class="form-grid-address">
+                    <div class="form-grid-address" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px;">
                         <div class="input-group">
                             <label>Calle / Avenida</label>
                             <input type="text" id="regCalle" placeholder="Ej: Av. Paicaví" required>
@@ -174,6 +234,10 @@
                         <div class="input-group">
                             <label>N°</label>
                             <input type="tel" id="regNumero" placeholder="123" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Depto (Op)</label>
+                            <input type="text" id="regDepto" placeholder="402">
                         </div>
                     </div>
                 </div>

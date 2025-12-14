@@ -5,8 +5,9 @@ const parkingController = require('../controllers/parkingController');
 const vehicleController = require('../controllers/vehicleController');
 const rentController = require('../controllers/rentController'); 
 const locationController = require('../controllers/locationController'); 
-const adminController = require('../controllers/adminController'); // NUEVO
-const { verifyToken, verifyAdmin } = require('../middlewares/authMiddleware'); // ACTUALIZADO
+const adminController = require('../controllers/adminController'); 
+const ratingController = require('../controllers/ratingController'); // NUEVO IMPORT
+const { verifyToken, verifyAdmin } = require('../middlewares/authMiddleware'); 
 const upload = require('../middlewares/uploadMiddleware');
 
 // === AUTH ===
@@ -36,11 +37,15 @@ router.get('/rent/owner', verifyToken, rentController.getOwnerRents);
 router.get('/rent/mine', verifyToken, rentController.getMyRentals);   
 router.post('/rent/terminate', verifyToken, rentController.terminateRent);
 
+// === CALIFICACIONES (RATINGS) - NUEVO ===
+router.post('/ratings', verifyToken, ratingController.createRating);
+router.get('/ratings/parking/:parkingId', ratingController.getParkingRatings);
+
 // === UBICACIÓN ===
 router.get('/locations/regions', locationController.getRegions);
 router.get('/locations/comunas/:regionId', locationController.getComunasByRegion);
 
-// === ADMIN (NUEVAS RUTAS) ===
+// === ADMIN ===
 router.get('/admin/users', verifyToken, verifyAdmin, adminController.getAllUsers);
 router.put('/admin/users/:id/status', verifyToken, verifyAdmin, adminController.toggleUserStatus);
 router.get('/admin/stats', verifyToken, verifyAdmin, adminController.getStats);
