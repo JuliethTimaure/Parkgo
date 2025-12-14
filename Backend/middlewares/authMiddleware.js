@@ -18,7 +18,6 @@ const verifyToken = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
         req.user = decoded; // Guardamos datos del usuario en la petición
-        // console.log(`👤 [AUTH OK] Usuario ID: ${decoded.id}`);
         next();
     } catch (err) {
         console.error(`❌ [AUTH ERROR] Token inválido: ${err.message}`);
@@ -26,4 +25,16 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-module.exports = verifyToken;
+// Middleware exclusivo para administradores
+const verifyAdmin = (req, res, next) => {
+    // Se asume que verifyToken ya se ejecutó antes
+    // AHORA VALIDAMOS CONTRA EL ROL 3 (SEGÚN TU BASE DE DATOS)
+    if (req.user && req.user.rol === 3) {
+        next();
+    } else {
+        console.warn(`⛔ [ADMIN BLOCK] Usuario ${req.user ? req.user.id : 'anon'} (Rol ${req.user.rol}) intentó ruta admin.`);
+        return res.status(403).json({ error: 'Acceso denegado. Requiere privilegios de administrador.' });
+    }
+};
+
+module.exports = { verifyToken, verifyAdmin };
