@@ -51,7 +51,7 @@ const createParking = async (req, res) => {
             [estId, titulo, descripcion, precio, es_24_horas === 'true', hStart, hEnd]
         );
 
-        // 3. Subir Múltiples Imágenes
+        // 3. Subir Múltiples Imágenes (si existen)
         if (req.files && req.files.length > 0) {
             console.log(`📸 Subiendo ${req.files.length} imágenes...`);
             
@@ -83,7 +83,7 @@ const createParking = async (req, res) => {
     }
 };
 
-// 2. OBTENER TODOS (Público)
+// 2. OBTENER TODOS (Público - Solo disponibles)
 const getAllParkings = async (req, res) => {
     try {
         const result = await db.query(`
@@ -104,10 +104,11 @@ const getAllParkings = async (req, res) => {
     }
 };
 
-// 3. OBTENER MIS ESTACIONAMIENTOS (Privado)
+// 3. OBTENER MIS ESTACIONAMIENTOS (Privado - Filtra los eliminados/bloqueados)
 const getMyParkings = async (req, res) => {
     try {
         const userId = req.user.id;
+        // AQUÍ ESTÁ LA CLAVE 1: No mostrar los que tengan estado 'Bloqueada' (borrados lógicos)
         const result = await db.query(`
             SELECT p.id_publicacion, p.titulo, p.precio, p.estado, p.descripcion,
                    e.calle, e.numero_calle, e.n_estacionamiento, c.nombre_comuna,
@@ -115,7 +116,8 @@ const getMyParkings = async (req, res) => {
             FROM publicacion p
             JOIN estacionamiento e ON p.id_estacionamiento = e.id_estacionamiento
             JOIN comuna c ON e.id_comuna = c.id_comuna
-            WHERE e.id_usuario_propietario = $1
+            WHERE e.id_usuario_propietario = $1 
+            AND p.estado != 'Bloqueada'
             ORDER BY p.id_publicacion DESC
         `, [userId]);
         res.json(result.rows);
@@ -125,12 +127,13 @@ const getMyParkings = async (req, res) => {
     }
 };
 
-// 4. ELIMINAR
+// 4. ELIMINAR (SOLUCIÓN REAL AL ERROR DE PANTALLA)
 const deleteParking = async (req, res) => {
     const userId = req.user.id;
     const { id } = req.params;
     
     try {
+        // A. Verificar si es dueño
         const checkOwner = await db.query(`
             SELECT p.id_publicacion 
             FROM publicacion p
@@ -138,12 +141,60 @@ const deleteParking = async (req, res) => {
             WHERE p.id_publicacion = $1 AND e.id_usuario_propietario = $2
         `, [id, userId]);
 
-        if (checkOwner.rows.length === 0) return res.status(403).json({ error: 'No autorizado o no existe' });
+        if (checkOwner.rows.length === 0) return res.status(403).json({ error: 'No autorizado o la publicación no existe' });
 
-        await db.query('DELETE FROM publicacion WHERE id_publicacion = $1', [id]);
-        res.json({ message: 'Publicación eliminada' });
+        // B. VALIDACIÓN: NO ELIMINAR SI HAY CONTRATO ACTIVO (Arriendo en curso)
+        // Esto es por seguridad, no puedes borrar algo que alguien está usando AHORA.
+        const checkContract = await db.query(`
+            SELECT id_contrato FROM contrato 
+            WHERE id_publicacion = $1 
+            AND estado_contrato IN ('ACTIVO', 'PENDIENTE')
+        `, [id]);
+
+        if (checkContract.rows.length > 0) {
+            return res.status(400).json({ 
+                error: 'No se puede eliminar porque hay un arriendo activo o pendiente. Finalízalo primero.' 
+            });
+        }
+
+        // C. INTENTAR ELIMINACIÓN
+        try {
+            // Intentamos borrar mensajes y conversaciones primero (limpieza)
+            await db.query('DELETE FROM mensaje WHERE id_conversacion IN (SELECT id_conversacion FROM conversacion WHERE id_publicacion = $1)', [id]);
+            await db.query('DELETE FROM conversacion WHERE id_publicacion = $1', [id]);
+
+            // Intentamos borrar la publicación físicamente
+            await db.query('DELETE FROM publicacion WHERE id_publicacion = $1', [id]);
+            
+            // Si llega aquí, se borró de verdad (porque no tenía historial importante)
+            res.json({ message: 'Publicación eliminada correctamente' });
+
+        } catch (innerErr) {
+            // D. AQUÍ ESTÁ LA SOLUCIÓN:
+            // Si falla por código 23503 (Foreign Key Violation), significa que hay historial (contratos viejos).
+            // Entonces hacemos "Soft Delete" (Borrado Lógico).
+            if (innerErr.code === '23503') {
+                console.log(`⚠️ No se puede borrar físico ID ${id} (Tiene historial). Archivando...`);
+                
+                // Cambiamos estado a 'Bloqueada' para que desaparezca de tu lista
+                await db.query(`
+                    UPDATE publicacion 
+                    SET estado = 'Bloqueada', 
+                        titulo = titulo || ' (Eliminado)' 
+                    WHERE id_publicacion = $1
+                `, [id]);
+
+                // Le decimos al frontend que fue un éxito para que actualice la pantalla
+                return res.json({ message: 'Publicación eliminada de tu lista (Archivada por historial).' });
+            } else {
+                // Si es otro error desconocido, que falle normal
+                throw innerErr; 
+            }
+        }
+
     } catch (err) {
-        res.status(500).json({ error: 'Error al eliminar' });
+        console.error('Error deleteParking:', err);
+        res.status(500).json({ error: 'Error interno al intentar eliminar.' });
     }
 };
 
@@ -174,9 +225,9 @@ const getParkingById = async (req, res) => {
         if (result.rows.length === 0) return res.status(404).json({ error: 'Estacionamiento no encontrado' });
 
         const parkingData = result.rows[0];
-        const imagenes = result.rows.map(row => row.ruta_imagen).filter(img => img !== null);
-        parkingData.imagenes = imagenes;
-        delete parkingData.ruta_imagen;
+        // Convertir imagen única a array si es necesario para el frontend
+        const resultImgs = await db.query(`SELECT ruta_imagen FROM imagen_estacionamiento WHERE id_estacionamiento = (SELECT id_estacionamiento FROM publicacion WHERE id_publicacion = $1)`, [id]);
+        parkingData.imagenes = resultImgs.rows.map(row => row.ruta_imagen);
 
         res.json(parkingData);
     } catch (err) {
@@ -185,7 +236,7 @@ const getParkingById = async (req, res) => {
     }
 };
 
-// 6. ACTUALIZAR PUBLICACIÓN (NUEVA FUNCIÓN)
+// 6. ACTUALIZAR PUBLICACIÓN
 const updateParking = async (req, res) => {
     const client = await db.pool.connect();
     const { id } = req.params;
@@ -234,7 +285,7 @@ const updateParking = async (req, res) => {
             WHERE id_publicacion = $7
         `, [titulo, descripcion, precio, es_24_horas === 'true', hStart, hEnd, id]);
 
-        // (Opcional) Si suben fotos nuevas, se agregan a las existentes
+        // Agregar nuevas fotos si vienen
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
                 const b64 = Buffer.from(file.buffer).toString('base64');

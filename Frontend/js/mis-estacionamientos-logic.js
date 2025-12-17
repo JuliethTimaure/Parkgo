@@ -160,20 +160,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- 6. ELIMINAR ---
+    // --- 6. ELIMINAR (CORREGIDO LÓGICA DE ALERTA) ---
     window.deleteParking = async (id) => {
         Swal.fire({
-            title: '¿Eliminar publicación?', text: "Esta acción es irreversible.", icon: 'warning',
-            showCancelButton: true, confirmButtonColor: '#EF4444', confirmButtonText: 'Sí, borrar'
+            title: '¿Eliminar publicación?', 
+            text: "Esta acción es irreversible.", 
+            icon: 'warning',
+            showCancelButton: true, 
+            confirmButtonColor: '#EF4444', 
+            confirmButtonText: 'Sí, borrar'
         }).then(async (result) => {
             if(result.isConfirmed) {
                 try {
-                    await fetch(`${API_URL}/parkings/${id}`, {
-                        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+                    const res = await fetch(`${API_URL}/parkings/${id}`, {
+                        method: 'DELETE', 
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    loadMyParkings();
-                    Swal.fire('Eliminado', '', 'success');
-                } catch(err) { Swal.fire('Error', 'No se pudo eliminar', 'error'); }
+
+                    // IMPORTANTE: Aquí revisamos si el servidor dio OK o ERROR
+                    if (res.ok) {
+                        // Solo si se borró realmente:
+                        loadMyParkings();
+                        Swal.fire('Eliminado', 'La publicación ha sido eliminada correctamente.', 'success');
+                    } else {
+                        // Si hay contrato activo, entra aquí:
+                        const data = await res.json(); // Leemos el mensaje del backend
+                        Swal.fire('Atención', data.error || 'No se pudo eliminar.', 'error');
+                    }
+
+                } catch(err) { 
+                    console.error(err);
+                    Swal.fire('Error', 'Fallo de conexión con el servidor', 'error'); 
+                }
             }
         });
     };
