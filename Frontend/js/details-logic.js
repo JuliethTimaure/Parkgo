@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- 3. Rellenar Datos en el DOM ---
         document.title = `${p.titulo} - Park Go`;
         
-        // === CORRECCIÓN AQUÍ: ACTUALIZAR EL BREADCRUMB ===
+        // Actualizar el Breadcrumb
         const elBread = document.getElementById('breadcrumb');
         if(elBread) {
             elBread.innerHTML = `
@@ -134,15 +134,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ownerImg = document.getElementById('ownerImg');
         if(ownerImg && p.url_foto_perfil) ownerImg.src = p.url_foto_perfil;
 
-        // === LOGICA BOTONES DE ACCIÓN ===
+        // === LOGICA BOTONES DE ACCIÓN (ACTUALIZADA PARA EDICIÓN) ===
         const actionContainer = document.querySelector('.action-buttons');
         if(actionContainer) {
             actionContainer.innerHTML = ''; 
 
             if (currentUser && currentUser.id_usuario === p.id_usuario_propietario) {
-                // ES EL DUEÑO
+                // ES EL DUEÑO -> Mostrar botones de Editar y Eliminar
                 actionContainer.innerHTML = `
-                    <button class="btn-primary" style="background:#0F172A; width:100%; margin-bottom:10px;" onclick="Swal.fire('Info', 'La edición estará disponible pronto', 'info')">
+                    <button class="btn-primary" style="background:#0F172A; width:100%; margin-bottom:10px;" 
+                        onclick="window.location.href='mis-estacionamientos.html?edit=${p.id_publicacion}'">
                         <i class="fa-solid fa-pen"></i> Editar Publicación
                     </button>
                     <button class="btn-primary" style="background:#EF4444; width:100%; border:none;" onclick="deleteMyParking(${p.id_publicacion})">
@@ -150,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </button>
                 `;
             } else {
-                // ES UN CLIENTE (O NO LOGUEADO)
+                // ES UN CLIENTE (O NO LOGUEADO) -> Mostrar botones de contacto
                 const phoneClean = p.telefono_dueno ? p.telefono_dueno.replace(/\D/g, '') : '';
                 const wsaUrl = `https://wa.me/${phoneClean}?text=Hola, me interesa tu estacionamiento "${p.titulo}"`;
                 
