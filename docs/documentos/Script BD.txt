@@ -1,0 +1,338 @@
+CREATE TABLE rol (
+
+id_rol SERIAL PRIMARY KEY,
+
+nombre_rol VARCHAR(20) NOT NULL UNIQUE
+
+);CREATE TABLE region (
+
+id_region SERIAL PRIMARY KEY,
+
+nombre_region VARCHAR(100) NOT NULL UNIQUE
+
+);
+
+CREATE TABLE comuna (
+
+id_comuna SERIAL PRIMARY KEY,
+
+id_region INTEGER NOT NULL,
+
+nombre_comuna VARCHAR(100) NOT NULL,
+
+CONSTRAINT fk_comuna_region FOREIGN KEY (id_region) REFERENCES region (id_region)
+
+);
+
+CREATE TABLE marca_vehiculo (
+
+id_marca SERIAL PRIMARY KEY,
+
+nombre_marca VARCHAR(50) NOT NULL UNIQUE
+
+);
+
+CREATE TABLE modelo_vehiculo (
+
+id_modelo SERIAL PRIMARY KEY,
+
+id_marca INTEGER NOT NULL,
+
+nombre_modelo VARCHAR(100) NOT NULL,
+
+CONSTRAINT fk_modelo_marca FOREIGN KEY (id_marca) REFERENCES marca_vehiculo (id_marca)
+
+);
+
+CREATE TABLE usuario (
+
+id_usuario SERIAL PRIMARY KEY,
+
+id_rol INTEGER NOT NULL DEFAULT 1,
+
+id_comuna INTEGER NOT NULL,
+
+rut VARCHAR(12) NOT NULL UNIQUE,
+
+nombre VARCHAR(100) NOT NULL,
+
+apellido VARCHAR(100) NOT NULL,
+
+telefono VARCHAR(15),
+
+correo VARCHAR(100) NOT NULL UNIQUE,
+
+contrasena VARCHAR(255) NOT NULL,
+
+calle VARCHAR(100) NOT NULL,
+
+numero VARCHAR(10) NOT NULL,
+
+depto_casa VARCHAR(20),
+
+url_foto_perfil VARCHAR(1024), 
+estado_cuenta VARCHAR(20) DEFAULT 'ACTIVO',
+
+fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+CONSTRAINT fk_usuario_rol FOREIGN KEY (id_rol) REFERENCES rol (id_rol),
+
+CONSTRAINT fk_usuario_comuna FOREIGN KEY (id_comuna) REFERENCES comuna (id_comuna),
+
+CONSTRAINT ck_usuario_estado CHECK (estado_cuenta IN ('ELIMINADO', 'SUSPENDIDO', 'ACTIVO'))
+
+);
+
+CREATE TABLE estacionamiento (
+
+id_estacionamiento SERIAL PRIMARY KEY,
+
+id_usuario_propietario INTEGER NOT NULL,
+
+id_comuna INTEGER NOT NULL,
+
+calle VARCHAR(100) NOT NULL,
+
+numero_calle VARCHAR(20), 
+n_estacionamiento VARCHAR(20), 
+
+largo DECIMAL(5, 2),
+
+ancho DECIMAL(5, 2),
+
+altura_maxima DECIMAL(5, 2),
+
+latitud DECIMAL(10, 8), 
+longitud DECIMAL(11, 8),
+seguridad VARCHAR(100),
+
+tipo_cobertura VARCHAR(100),
+
+CONSTRAINT fk_est_usuario FOREIGN KEY (id_usuario_propietario) REFERENCES usuario (id_usuario),
+
+CONSTRAINT fk_est_comuna FOREIGN KEY (id_comuna) REFERENCES comuna (id_comuna)
+
+);
+
+CREATE TABLE vehiculo (
+
+id_vehiculo SERIAL PRIMARY KEY,
+
+id_usuario_propietario INTEGER NOT NULL,
+
+id_modelo INTEGER NOT NULL,
+
+patente VARCHAR(10) NOT NULL UNIQUE,
+
+color VARCHAR(50),
+
+tipo_vehiculo VARCHAR(50),
+
+CONSTRAINT fk_veh_usuario FOREIGN KEY (id_usuario_propietario) REFERENCES usuario (id_usuario),
+
+CONSTRAINT fk_veh_modelo FOREIGN KEY (id_modelo) REFERENCES modelo_vehiculo (id_modelo)
+
+);
+
+CREATE TABLE imagen_estacionamiento (
+
+id_imagen SERIAL PRIMARY KEY,
+
+id_estacionamiento INTEGER NOT NULL,
+
+ruta_imagen VARCHAR(1024), 
+descripcion VARCHAR(255),
+
+CONSTRAINT fk_img_est FOREIGN KEY (id_estacionamiento) REFERENCES estacionamiento (id_estacionamiento) ON DELETE CASCADE
+
+);
+
+CREATE TABLE publicacion (
+
+id_publicacion SERIAL PRIMARY KEY,
+
+id_estacionamiento INTEGER NOT NULL,
+
+titulo VARCHAR(100) NOT NULL,
+
+descripcion VARCHAR(200) NOT NULL,
+
+precio DECIMAL(10, 2) NOT NULL,
+
+es_24_horas BOOLEAN NOT NULL DEFAULT FALSE,
+
+hora_apertura TIME(0),
+
+hora_cierre TIME(0),
+
+estado VARCHAR(20) NOT NULL DEFAULT 'Disponible',
+
+CONSTRAINT fk_pub_est FOREIGN KEY (id_estacionamiento) REFERENCES estacionamiento (id_estacionamiento) ON DELETE CASCADE,
+
+
+CONSTRAINT ck_pub_estado CHECK (estado IN ('Bloqueada', 'Inactiva', 'Disponible', 'Arrendado'))
+
+);
+
+CREATE TABLE contrato (
+
+id_contrato SERIAL PRIMARY KEY,
+
+id_publicacion INTEGER NOT NULL,
+
+id_usuario_arrendatario INTEGER NOT NULL,
+
+id_vehiculo INTEGER NOT NULL,
+
+fecha_inicio TIMESTAMP NOT NULL,
+
+fecha_termino TIMESTAMP NOT NULL,
+
+monto_total_contrato DECIMAL(12, 2) NOT NULL,
+
+estado_contrato VARCHAR(20) DEFAULT 'ACTIVO',
+
+CONSTRAINT fk_con_pub FOREIGN KEY (id_publicacion) REFERENCES publicacion (id_publicacion),
+
+CONSTRAINT fk_con_usu FOREIGN KEY (id_usuario_arrendatario) REFERENCES usuario (id_usuario),
+
+CONSTRAINT fk_con_veh FOREIGN KEY (id_vehiculo) REFERENCES vehiculo (id_vehiculo)
+
+);
+
+CREATE TABLE pago (
+
+id_pago SERIAL PRIMARY KEY,
+
+id_contrato INTEGER NOT NULL,
+
+monto_pagado DECIMAL(12, 2) NOT NULL,
+
+estado VARCHAR(50) NOT NULL,
+
+fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+metodo_pago VARCHAR(100),
+
+id_transaccion_externa VARCHAR(100),
+
+CONSTRAINT fk_pago_con FOREIGN KEY (id_contrato) REFERENCES contrato (id_contrato)
+
+);
+
+CREATE TABLE calificacion (
+
+id_calificacion SERIAL PRIMARY KEY,
+
+id_contrato INTEGER NOT NULL,
+
+id_usuario_autor INTEGER NOT NULL,
+
+puntuacion INTEGER NOT NULL,
+
+comentario TEXT,
+
+fecha_calificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+CONSTRAINT fk_cal_con FOREIGN KEY (id_contrato) REFERENCES contrato (id_contrato),
+
+CONSTRAINT fk_cal_autor FOREIGN KEY (id_usuario_autor) REFERENCES usuario (id_usuario),
+
+CONSTRAINT ck_cal_puntuacion CHECK (puntuacion >= 1 AND puntuacion <= 5)
+
+);
+
+CREATE TABLE conversacion (
+
+id_conversacion SERIAL PRIMARY KEY,
+
+id_publicacion INTEGER NOT NULL,
+
+id_usuario_interesado INTEGER NOT NULL,
+
+fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+CONSTRAINT fk_conv_pub FOREIGN KEY (id_publicacion) REFERENCES publicacion (id_publicacion),
+
+CONSTRAINT fk_conv_usu FOREIGN KEY (id_usuario_interesado) REFERENCES usuario (id_usuario)
+
+);
+
+CREATE TABLE mensaje (
+
+id_mensaje SERIAL PRIMARY KEY,
+
+id_conversacion INTEGER NOT NULL,
+
+id_usuario_emisor INTEGER NOT NULL,
+
+contenido_mensaje TEXT NOT NULL,
+
+fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+leido BOOLEAN DEFAULT FALSE,
+
+CONSTRAINT fk_msg_conv FOREIGN KEY (id_conversacion) REFERENCES conversacion (id_conversacion) ON DELETE CASCADE,
+
+CONSTRAINT fk_msg_usu FOREIGN KEY (id_usuario_emisor) REFERENCES usuario (id_usuario)
+
+);
+
+CREATE TABLE reporte (
+
+id_reporte SERIAL PRIMARY KEY,
+
+id_usuario_reportante INTEGER NOT NULL,
+
+id_contrato INTEGER,
+
+tipo_problema VARCHAR(100) NOT NULL,
+
+descripcion TEXT NOT NULL,
+
+estado_reporte VARCHAR(20) DEFAULT 'ABIERTO',
+
+fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+respuesta_admin TEXT,
+
+CONSTRAINT fk_rep_usu FOREIGN KEY (id_usuario_reportante) REFERENCES usuario (id_usuario),
+
+CONSTRAINT fk_rep_con FOREIGN KEY (id_contrato) REFERENCES contrato (id_contrato)
+
+);
+
+CREATE TABLE datos_facturacion (
+
+id_datos SERIAL PRIMARY KEY,
+
+id_usuario INTEGER NOT NULL UNIQUE,
+
+rut VARCHAR(12) NOT NULL,
+
+razon_social VARCHAR(100) NOT NULL,
+
+giro VARCHAR(255),
+
+direccion VARCHAR(255) NOT NULL,
+
+correo VARCHAR(100) NOT NULL,
+
+CONSTRAINT fk_datos_usu FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+
+);
+
+CREATE TABLE documento_tributario (
+
+id_documento SERIAL PRIMARY KEY,
+
+id_pago INTEGER NOT NULL,
+
+url_documento VARCHAR(1024), 
+fecha_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+tipo_documento VARCHAR(50) DEFAULT 'BOLETA',
+
+CONSTRAINT fk_doc_pago FOREIGN KEY (id_pago) REFERENCES pago (id_pago)
+
+); 
